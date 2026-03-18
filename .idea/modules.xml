@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="ProjectModuleManager">
-    <modules>
-      <module fileurl="file://$PROJECT_DIR$/BLK_Burguer/BLK_Burguer.iml" filepath="$PROJECT_DIR$/BLK_Burguer/BLK_Burguer.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/blk-burguer-system.iml" filepath="$PROJECT_DIR$/.idea/blk-burguer-system.iml" />
-    </modules>
-  </component>
-</project>
