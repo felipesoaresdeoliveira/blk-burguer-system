@@ -24,8 +24,7 @@ CREATE TABLE IF NOT EXISTS "ProdutoIngrediente" (
     id SERIAL PRIMARY KEY,
     produto_id INTEGER NOT NULL REFERENCES "Produto"(id) ON DELETE CASCADE,
     ingrediente_nome VARCHAR(100) NOT NULL REFERENCES "Estoque"(nome),
-    quantidade INTEGER NOT NULL CHECK (quantidade > 0),
-    UNIQUE (produto_id, ingrediente_nome)
+    quantidade INTEGER NOT NULL CHECK (quantidade > 0)
 );
 
 CREATE TABLE IF NOT EXISTS "Venda" (
