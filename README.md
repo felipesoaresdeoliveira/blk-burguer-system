@@ -1,2 +1,19 @@
-# blk-burguer-system
-Sistema de gestão de hamburgueria desenvolvido em Java para o Projeto Integrador UNIPAR.
+# BLK Burguer 🍔
+
+Sistema de gerenciamento desenvolvido para projeto de extensão.
+
+## Tecnologias
+
+- Java
+- JDBC
+- MySQL
+- NetBeans
+- Git
+
+## Funcionalidades
+
+✔ Login de usuários
+✔ Cadastro de produtos
+✔ Controle de estoque
+✔ Registro de vendas
+✔ Relatórios
