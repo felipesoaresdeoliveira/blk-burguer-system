@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="BLK_BURGUER" default="jar" basedir=".">
+    <description>Build portátil do BLK Burguer.</description>
+
+    <property name="src.dir" value="src"/>
+    <property name="build.dir" value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+    <property name="dist.dir" value="dist"/>
+    <property name="lib.dir" value="lib"/>
+    <property name="postgresql.version" value="42.7.13"/>
+    <property name="postgresql.jar" value="${lib.dir}/postgresql-${postgresql.version}.jar"/>
+    <property name="postgresql.url" value="https://repo1.maven.org/maven2/org/postgresql/postgresql/${postgresql.version}/postgresql-${postgresql.version}.jar"/>
+
+    <target name="init">
+        <mkdir dir="${classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+    </target>
+
+    <target name="compile" depends="init" description="Compila o código-fonte">
+        <javac srcdir="${src.dir}"
+               destdir="${classes.dir}"
+               source="8"
+               target="8"
+               encoding="UTF-8"
+               includeantruntime="false"/>
+    </target>
+
+    <target name="deps" description="Baixa o driver JDBC do PostgreSQL para execução local">
+        <mkdir dir="${lib.dir}"/>
+        <get src="${postgresql.url}"
+             dest="${postgresql.jar}"
+             skipexisting="true"
+             usetimestamp="true"/>
+    </target>
+
+    <target name="jar" depends="compile" description="Gera o JAR da aplicação">
+        <jar destfile="${dist.dir}/BLK_BURGUER.jar" basedir="${classes.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="telas.Login"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="run" depends="compile,deps" description="Executa a aplicação">
+        <java classname="telas.Login" fork="true">
+            <classpath>
+                <pathelement location="${classes.dir}"/>
+                <pathelement location="${postgresql.jar}"/>
+            </classpath>
+        </java>
+    </target>
+
+    <target name="clean" description="Remove artefatos gerados">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+</project>
