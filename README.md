@@ -4,24 +4,59 @@ Sistema de gestão de hamburgueria desenvolvido em Java Swing com PostgreSQL par
 
 ## Funcionalidades atuais
 
-- Login
+- Login de usuários
 - Controle de estoque e ingredientes
 - Cadastro de produtos e composição por ingredientes
-- Registro de vendas
-- Baixa de estoque na finalização da venda
+- Registro e finalização de vendas
+- Baixa automática de estoque
 - Relatório de vendas e estoque crítico
 
 ## Tecnologias
 
 - Java 8
 - Java Swing
-- NetBeans
 - PostgreSQL
 - Ant
+- NetBeans
+- GitHub Actions
+
+## Como preparar o projeto
+
+### 1. Pré-requisitos
+
+- JDK 8 ou superior
+- Apache Ant
+- PostgreSQL
+
+### 2. Banco de dados
+
+Crie um banco chamado `BLKburguer` e execute o arquivo:
+
+```text
+database/schema.sql
+```
+
+O schema versionado cria as tabelas utilizadas atualmente pelo sistema: `Login`, `Estoque`, `Produto`, `ProdutoIngrediente` e `Venda`.
+
+O backup binário antigo do PostgreSQL não é necessário para criar uma instalação nova do sistema.
+
+### 3. Compilar
+
+```bash
+ant clean compile
+```
+
+### 4. Executar
+
+```bash
+ant run
+```
+
+O comando `ant run` baixa automaticamente o driver JDBC PostgreSQL 42.7.13 para a pasta `lib/` quando necessário. O arquivo `.jar` não é versionado.
+
+> A configuração de usuário/senha da conexão com PostgreSQL ainda veio do projeto original e deve ser externalizada antes de tratar o sistema como versão final/produção.
 
 ## Estrutura de branches
-
-O desenvolvimento do projeto segue este fluxo:
 
 ```text
 main
@@ -31,12 +66,12 @@ main
     └── fix/nome-da-correcao
 ```
 
-- `main`: versão estável do projeto.
-- `develop`: branch principal de desenvolvimento e integração.
-- `feature/*`: novas funcionalidades, sempre criadas a partir de `develop`.
-- `fix/*`: correções, também criadas a partir de `develop`.
+- `main`: versão estável.
+- `develop`: integração do desenvolvimento.
+- `feature/*`: novas funcionalidades criadas a partir de `develop`.
+- `fix/*`: correções criadas a partir de `develop`.
 
-As Pull Requests de desenvolvimento devem apontar para `develop`. Quando a versão estiver estável, é aberto um PR de `develop` para `main`.
+PRs de desenvolvimento devem apontar para `develop`. Uma versão pronta é promovida por PR de `develop` para `main`.
 
 ## Fluxo para desenvolver
 
@@ -46,7 +81,7 @@ git pull origin develop
 git checkout -b feature/nome-da-feature
 ```
 
-Depois das alterações:
+Depois:
 
 ```bash
 git add .
@@ -54,16 +89,12 @@ git commit -m "feat: descricao da alteracao"
 git push -u origin feature/nome-da-feature
 ```
 
-Em seguida, abra uma Pull Request da sua branch para `develop`.
+Abra a Pull Request para `develop` e aguarde o workflow **Build** concluir com sucesso.
 
-## Banco de dados
+## Regras do repositório
 
-O projeto utiliza PostgreSQL e espera um banco chamado `BLKburguer`.
+Não versionar `build/`, `dist/`, arquivos `.class`, `.jar`, `nbproject/private/`, `.idea/` ou credenciais. O template de PR contém o checklist mínimo e o `CODEOWNERS` aponta a revisão geral para `@felipesoaresdeoliveira`.
 
-O backup original do banco existente no projeto anterior está em formato binário do PostgreSQL. Ele não foi incluído automaticamente nesta migração e deve ser restaurado/adicionado separadamente.
+## Origem
 
-## Observações da migração
-
-Este repositório foi criado a partir do código do projeto `Projeto-Extens-o-2026`. Arquivos gerados de compilação, como `build/`, classes compiladas e configurações privadas do NetBeans, não são versionados.
-
-O projeto herdado ainda possui configurações de dependências e conexão com o banco que dependem do ambiente local. Essas configurações devem ser revisadas em uma próxima etapa para tornar a execução totalmente portátil entre os computadores dos desenvolvedores.
+A base inicial foi migrada de `Luiz-Hamamura/Projeto-Extens-o-2026`, preservando o código-fonte Java e os arquivos `.form` do NetBeans, mas removendo artefatos gerados e configurações locais de IDE.
