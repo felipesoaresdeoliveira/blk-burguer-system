@@ -1,20 +1,26 @@
 package dao;
 
+import config.ConexaoBD;
 import entidades.FormaPagamento;
+import entidades.Pedido;
 import entidades.Venda;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Acesso ao banco para vendas. Todos os métodos recebem a conexão para que
- * o chamador controle a transação.
+ * Acesso ao banco para vendas. Os métodos de gravação recebem a conexão para
+ * que o chamador controle a transação.
  */
 public class VendaDAO {
 
@@ -82,6 +88,69 @@ public class VendaDAO {
                 return rs.getInt(1);
             }
         }
+    }
+
+    /**
+     * Vendas do período [de, ate], mais recentes primeiro. Limites nulos não
+     * filtram. Itens antigos sem pedido aparecem como vendas avulsas.
+     */
+    public List<Pedido> listarPedidos(LocalDate de, LocalDate ate) throws SQLException {
+        Timestamp inicio = Timestamp.valueOf((de != null ? de : LocalDate.of(1900, 1, 1)).atStartOfDay());
+        Timestamp fim = Timestamp.valueOf((ate != null ? ate : LocalDate.of(9999, 1, 1)).plusDays(1).atStartOfDay());
+        String sql = "SELECT p.id, p.data_pedido AS data, p.forma_pagamento, p.total, "
+                + "       string_agg(v.quantidade || 'x ' || v.produto, ', ' ORDER BY v.id) AS itens "
+                + "FROM \"Pedido\" p JOIN \"Venda\" v ON v.pedido_id = p.id "
+                + "WHERE p.data_pedido >= ? AND p.data_pedido < ? "
+                + "GROUP BY p.id "
+                + "UNION ALL "
+                + "SELECT -v.id, v.data_venda, NULL, v.total, v.quantidade || 'x ' || v.produto "
+                + "FROM \"Venda\" v "
+                + "WHERE v.pedido_id IS NULL AND v.data_venda >= ? AND v.data_venda < ? "
+                + "ORDER BY data DESC";
+        List<Pedido> pedidos = new ArrayList<>();
+        try (Connection con = ConexaoBD.getConnection();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setTimestamp(1, inicio);
+            pst.setTimestamp(2, fim);
+            pst.setTimestamp(3, inicio);
+            pst.setTimestamp(4, fim);
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    Pedido p = new Pedido();
+                    p.setId(rs.getInt("id"));
+                    p.setData(rs.getTimestamp("data").toLocalDateTime());
+                    String forma = rs.getString("forma_pagamento");
+                    p.setFormaPagamento(forma == null ? null : FormaPagamento.valueOf(forma));
+                    p.setTotal(rs.getDouble("total"));
+                    p.setResumoItens(rs.getString("itens"));
+                    pedidos.add(p);
+                }
+            }
+        }
+        return pedidos;
+    }
+
+    /** Itens de uma venda listada por {@link #listarPedidos}. */
+    public List<Venda> itensDoPedido(int pedidoId) throws SQLException {
+        String sql = pedidoId > 0
+                ? "SELECT produto, quantidade, valor, total FROM \"Venda\" WHERE pedido_id = ? ORDER BY id"
+                : "SELECT produto, quantidade, valor, total FROM \"Venda\" WHERE id = ?";
+        List<Venda> itens = new ArrayList<>();
+        try (Connection con = ConexaoBD.getConnection();
+                PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setInt(1, Math.abs(pedidoId));
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    Venda v = new Venda();
+                    v.setProduto(rs.getString("produto"));
+                    v.setQuantidade(rs.getInt("quantidade"));
+                    v.setValor(rs.getDouble("valor"));
+                    v.setTotal(rs.getDouble("total"));
+                    itens.add(v);
+                }
+            }
+        }
+        return itens;
     }
 
     public void registrarItem(Connection con, int pedidoId, Venda item) throws SQLException {
