@@ -47,6 +47,19 @@ CREATE TABLE IF NOT EXISTS "MovimentacaoEstoque" (
     data_movimentacao TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- Cabeçalho da venda: agrupa os itens de uma mesma compra e guarda o pagamento (#10, #17)
+CREATE TABLE IF NOT EXISTS "Pedido" (
+    id SERIAL PRIMARY KEY,
+    data_pedido TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    total DOUBLE PRECISION NOT NULL CHECK (total >= 0),
+    forma_pagamento VARCHAR(20) NOT NULL CHECK (forma_pagamento IN ('DINHEIRO', 'PIX', 'DEBITO', 'CREDITO')),
+    valor_recebido DOUBLE PRECISION NOT NULL CHECK (valor_recebido >= total),
+    troco DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (troco >= 0)
+);
+
+-- Itens antigos ficam com pedido_id NULL e aparecem como vendas avulsas.
+ALTER TABLE "Venda" ADD COLUMN IF NOT EXISTS pedido_id INTEGER REFERENCES "Pedido"(id);
+
 -- Crie o primeiro usuário manualmente antes de abrir o sistema.
 -- Exemplo apenas para ambiente local de desenvolvimento:
 -- INSERT INTO "Login" (usuario, senha) VALUES ('admin', 'troque-esta-senha');
