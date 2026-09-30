@@ -9,12 +9,6 @@ public class TelaProdutos extends javax.swing.JFrame {
     private java.util.List<Integer> quantidadesDoProduto = new java.util.ArrayList<>();
     private int produtoSelecionadoId = -1;
 
-    private java.sql.Connection getConnection() throws Exception {
-        Class.forName("org.postgresql.Driver");
-        return java.sql.DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432/BLKburguer", "postgres", "2627");
-    }
-
     public void limparCampos() {
         campoNome.setText("");
         campoPvenda.setText("");
@@ -68,7 +62,7 @@ public class TelaProdutos extends javax.swing.JFrame {
     public void carregarIngredientes() {
         listaIngredientes.clear();
         cBoxAddIngrediente.removeAllItems();
-        try (java.sql.Connection con = getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Estoque\"")) {
+        try (java.sql.Connection con = config.ConexaoBD.getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Estoque\"")) {
             while (rs.next()) {
                 entidades.Estoque e = new entidades.Estoque();
                 e.setNome(rs.getString("nome"));
@@ -108,7 +102,7 @@ public class TelaProdutos extends javax.swing.JFrame {
     }
 
     public void montaTabelaProdutos() {
-        try (java.sql.Connection con = getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery(
+        try (java.sql.Connection con = config.ConexaoBD.getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery(
                 "SELECT id, nome, tipo, preco FROM public.\"Produto\"")) {
 
             javax.swing.table.DefaultTableModel modelo
@@ -134,7 +128,7 @@ public class TelaProdutos extends javax.swing.JFrame {
     }
 
     public void montaTabelaIngredientes() {
-        try (java.sql.Connection con = getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Estoque\"")) {
+        try (java.sql.Connection con = config.ConexaoBD.getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Estoque\"")) {
 
             javax.swing.table.DefaultTableModel modelo
                     = new javax.swing.table.DefaultTableModel(
@@ -480,7 +474,7 @@ public class TelaProdutos extends javax.swing.JFrame {
         if (confirm != javax.swing.JOptionPane.YES_OPTION) {
             return;
         }
-        try (java.sql.Connection con = getConnection()) {
+        try (java.sql.Connection con = config.ConexaoBD.getConnection()) {
             java.sql.Statement stm = con.createStatement();
             stm.execute("DELETE FROM \"ProdutoIngrediente\" WHERE produto_id = " + produtoSelecionadoId);
             stm.execute("DELETE FROM \"Produto\" WHERE id = " + produtoSelecionadoId);
@@ -506,7 +500,7 @@ public class TelaProdutos extends javax.swing.JFrame {
             javax.swing.JOptionPane.showMessageDialog(null, "Informe o nome do produto.");
             return;
         }
-        try (java.sql.Connection con = getConnection()) {
+        try (java.sql.Connection con = config.ConexaoBD.getConnection()) {
             con.setAutoCommit(false);
             java.sql.Statement stm = con.createStatement();
             String nome = campoNome.getText().trim();
@@ -585,7 +579,7 @@ public class TelaProdutos extends javax.swing.JFrame {
             return;
         }
         try {
-            java.sql.Connection con = getConnection();
+            java.sql.Connection con = config.ConexaoBD.getConnection();
             java.sql.Statement stm = con.createStatement();
 
             String nomeProd = tabelaProdutos.getValueAt(linha, 0).toString();

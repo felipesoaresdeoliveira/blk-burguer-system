@@ -2,7 +2,6 @@ package telas;
 
 import entidades.Estoque;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -69,9 +68,7 @@ public class TelaEstoque extends javax.swing.JFrame {
 
     public void montaTabela() {
         try {
-            Class.forName("org.postgresql.Driver");
-            java.sql.Connection con = java.sql.DriverManager.getConnection(
-                    "jdbc:postgresql://localhost:5432/BLKburguer", "postgres", "2627");
+            java.sql.Connection con = config.ConexaoBD.getConnection();
             java.sql.Statement stm = con.createStatement();
             java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Estoque\"");
 
@@ -310,9 +307,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             return;
         }
         try {
-            Class.forName("org.postgresql.Driver");
-            java.sql.Connection con = java.sql.DriverManager.getConnection(
-                    "jdbc:postgresql://localhost:5432/BLKburguer", "postgres", "2627");
+            java.sql.Connection con = config.ConexaoBD.getConnection();
             con.createStatement().execute(
                     "DELETE FROM \"Estoque\" WHERE nome = '" + est.getNome() + "'");
             con.close();
@@ -332,9 +327,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             return;
         }
         try {
-            Class.forName("org.postgresql.Driver");
-            java.sql.Connection con = java.sql.DriverManager.getConnection(
-                    "jdbc:postgresql://localhost:5432/BLKburguer", "postgres", "2627");
+            java.sql.Connection con = config.ConexaoBD.getConnection();
             java.sql.Statement stm = con.createStatement();
 
             String nome = CampoNome.getText().trim();
