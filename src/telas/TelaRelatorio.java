@@ -13,9 +13,9 @@ public class TelaRelatorio extends javax.swing.JFrame {
             java.sql.Connection con = config.ConexaoBD.getConnection();
             java.sql.Statement stm = con.createStatement();
 
-            // total de vendas
+            // total de vendas: itens do mesmo pedido contam como uma venda
             java.sql.ResultSet rs = stm.executeQuery(
-                    "SELECT COUNT(*), SUM(total) FROM \"Venda\"");
+                    "SELECT COUNT(DISTINCT COALESCE('p' || pedido_id, 'v' || id)), SUM(total) FROM \"Venda\"");
             if (rs.next()) {
                 numVendasRealizadas.setText(String.valueOf(rs.getInt(1)));
                 numTotalVendido.setText(String.format("R$ %.2f", rs.getDouble(2)));

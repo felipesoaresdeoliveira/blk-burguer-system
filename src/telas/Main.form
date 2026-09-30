@@ -34,6 +34,7 @@
                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
                           <Component id="btnVenda" pref="155" max="32767" attributes="0"/>
                           <Component id="btnEstoque" max="32767" attributes="0"/>
+                          <Component id="btnHistorico" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
@@ -66,6 +67,8 @@
                   <Component id="btnEstoque" alignment="3" min="-2" pref="40" max="-2" attributes="0"/>
                   <Component id="btnProdutos" alignment="3" min="-2" pref="41" max="-2" attributes="0"/>
               </Group>
+              <EmptySpace type="separate" max="-2" attributes="0"/>
+              <Component id="btnHistorico" min="-2" pref="40" max="-2" attributes="0"/>
               <EmptySpace type="unrelated" max="-2" attributes="0"/>
               <Component id="btnSair" min="-2" pref="40" max="-2" attributes="0"/>
               <EmptySpace pref="48" max="32767" attributes="0"/>
@@ -120,6 +123,14 @@
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnProdutosActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnHistorico">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Histórico de vendas"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnHistoricoActionPerformed"/>
       </Events>
     </Component>
   </SubComponents>
