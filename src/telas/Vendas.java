@@ -47,6 +47,91 @@ public class Vendas extends javax.swing.JFrame {
         NumeroTotal1.setText(String.format("R$ %.2f", totalGeral));
     }
 
+    /** Lê valor em reais aceitando vírgula ou ponto; null se inválido. */
+    private static Double lerValor(String texto) {
+        try {
+            return Double.valueOf(texto.trim().replace(',', '.'));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Janela de pagamento: forma de pagamento e, em dinheiro, valor recebido
+     * com o troco calculado na hora. Retorna {forma, valorRecebido} ou null se
+     * o usuário cancelar.
+     */
+    private Object[] escolherPagamento(double total) {
+        javax.swing.JComboBox<entidades.FormaPagamento> campoForma
+                = new javax.swing.JComboBox<>(entidades.FormaPagamento.values());
+        javax.swing.JTextField campoRecebido = new javax.swing.JTextField(10);
+        javax.swing.JLabel lblTroco = new javax.swing.JLabel();
+        lblTroco.setFont(lblTroco.getFont().deriveFont(java.awt.Font.BOLD, 14f));
+
+        Runnable atualizar = () -> {
+            boolean dinheiro = campoForma.getSelectedItem() == entidades.FormaPagamento.DINHEIRO;
+            campoRecebido.setEnabled(dinheiro);
+            if (!dinheiro) {
+                lblTroco.setText("Troco: R$ 0,00");
+                lblTroco.setForeground(new java.awt.Color(0, 153, 51));
+                return;
+            }
+            Double recebido = lerValor(campoRecebido.getText());
+            double troco = recebido == null ? -total : service.VendaService.troco(total, recebido);
+            if (troco < 0) {
+                lblTroco.setText(String.format("Faltam: R$ %.2f", -troco));
+                lblTroco.setForeground(new java.awt.Color(204, 0, 0));
+            } else {
+                lblTroco.setText(String.format("Troco: R$ %.2f", troco));
+                lblTroco.setForeground(new java.awt.Color(0, 153, 51));
+            }
+        };
+        campoForma.addActionListener(e -> atualizar.run());
+        campoRecebido.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                atualizar.run();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                atualizar.run();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                atualizar.run();
+            }
+        });
+        atualizar.run();
+
+        javax.swing.JLabel lblTotal = new javax.swing.JLabel(String.format("Total: R$ %.2f", total));
+        lblTotal.setFont(lblTotal.getFont().deriveFont(java.awt.Font.BOLD, 16f));
+        javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.GridLayout(0, 1, 0, 6));
+        painel.add(lblTotal);
+        painel.add(new javax.swing.JLabel("Forma de pagamento:"));
+        painel.add(campoForma);
+        painel.add(new javax.swing.JLabel("Valor recebido (dinheiro):"));
+        painel.add(campoRecebido);
+        painel.add(lblTroco);
+
+        while (true) {
+            int opcao = javax.swing.JOptionPane.showConfirmDialog(this, painel, "Finalizar venda",
+                    javax.swing.JOptionPane.OK_CANCEL_OPTION, javax.swing.JOptionPane.PLAIN_MESSAGE);
+            if (opcao != javax.swing.JOptionPane.OK_OPTION) {
+                return null;
+            }
+            entidades.FormaPagamento forma = (entidades.FormaPagamento) campoForma.getSelectedItem();
+            if (forma != entidades.FormaPagamento.DINHEIRO) {
+                return new Object[]{forma, total};
+            }
+            Double recebido = lerValor(campoRecebido.getText());
+            if (recebido != null && service.VendaService.troco(total, recebido) >= 0) {
+                return new Object[]{forma, recebido};
+            }
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Informe um valor recebido igual ou maior que o total.",
+                    "Valor recebido", javax.swing.JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
     public Vendas() {
         initComponents();
         carregarEstoque();
@@ -225,20 +310,28 @@ public class Vendas extends javax.swing.JFrame {
             return;
         }
 
-        int confirm = javax.swing.JOptionPane.showConfirmDialog(this,
-                "Finalizar venda?\nTotal: " + NumeroTotal1.getText(),
-                "Confirmar", javax.swing.JOptionPane.YES_NO_OPTION);
-
-        if (confirm != javax.swing.JOptionPane.YES_OPTION) {
+        double total = service.VendaService.total(itensVenda);
+        Object[] pagamento = escolherPagamento(total);
+        if (pagamento == null) {
             return;
         }
+        entidades.FormaPagamento forma = (entidades.FormaPagamento) pagamento[0];
+        double recebido = (Double) pagamento[1];
 
         try {
-            new service.VendaService().finalizarVenda(itensVenda);
-            javax.swing.JOptionPane.showMessageDialog(this, "Venda finalizada com sucesso!");
+            int pedido = new service.VendaService().finalizarVenda(itensVenda, forma, recebido);
+            String msg = String.format("Venda nº %d finalizada com sucesso!%nPagamento: %s", pedido, forma);
+            if (forma == entidades.FormaPagamento.DINHEIRO) {
+                msg += String.format("%nTroco: R$ %.2f", service.VendaService.troco(total, recebido));
+            }
+            javax.swing.JOptionPane.showMessageDialog(this, msg);
         } catch (service.EstoqueInsuficienteException e) {
             javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
                     "Estoque insuficiente", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        } catch (IllegalArgumentException e) {
+            javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
+                    "Atenção", javax.swing.JOptionPane.WARNING_MESSAGE);
             return;
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());

@@ -1,5 +1,6 @@
 package dao;
 
+import entidades.FormaPagamento;
 import entidades.Venda;
 import java.sql.Array;
 import java.sql.Connection;
@@ -66,13 +67,31 @@ public class VendaDAO {
         }
     }
 
-    public void registrarItem(Connection con, Venda item) throws SQLException {
-        String sql = "INSERT INTO \"Venda\" (produto, quantidade, valor, total) VALUES (?, ?, ?, ?)";
+    /** Cria o cabeçalho da venda e retorna seu id. */
+    public int criarPedido(Connection con, double total, FormaPagamento forma,
+            double valorRecebido, double troco) throws SQLException {
+        String sql = "INSERT INTO \"Pedido\" (total, forma_pagamento, valor_recebido, troco) "
+                + "VALUES (?, ?, ?, ?) RETURNING id";
         try (PreparedStatement pst = con.prepareStatement(sql)) {
-            pst.setString(1, item.getProduto());
-            pst.setInt(2, item.getQuantidade());
-            pst.setDouble(3, item.getValor());
-            pst.setDouble(4, item.getTotal());
+            pst.setDouble(1, total);
+            pst.setString(2, forma.name());
+            pst.setDouble(3, valorRecebido);
+            pst.setDouble(4, troco);
+            try (ResultSet rs = pst.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+        }
+    }
+
+    public void registrarItem(Connection con, int pedidoId, Venda item) throws SQLException {
+        String sql = "INSERT INTO \"Venda\" (pedido_id, produto, quantidade, valor, total) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setInt(1, pedidoId);
+            pst.setString(2, item.getProduto());
+            pst.setInt(3, item.getQuantidade());
+            pst.setDouble(4, item.getValor());
+            pst.setDouble(5, item.getTotal());
             pst.executeUpdate();
         }
     }
