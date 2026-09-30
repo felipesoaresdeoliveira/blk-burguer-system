@@ -73,6 +73,11 @@ public class VendaDAO {
         }
     }
 
+    /** Devolve ao estoque o que foi baixado (item cancelado). */
+    public void devolverEstoque(Connection con, String ingrediente, int quantidade) throws SQLException {
+        baixarEstoque(con, ingrediente, -quantidade);
+    }
+
     /** Cria o cabeçalho da venda e retorna seu id. */
     public int criarPedido(Connection con, double total, FormaPagamento forma,
             double valorRecebido, double troco) throws SQLException {

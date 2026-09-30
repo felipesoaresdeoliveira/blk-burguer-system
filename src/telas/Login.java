@@ -4,7 +4,7 @@ public class Login extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Login.class.getName());
 
-    private final dao.UsuarioDAO usuarioDAO = new dao.UsuarioDAO();
+    private final service.UsuarioService usuarioService = new service.UsuarioService();
 
     public Login() {
         initComponents();
@@ -125,18 +125,20 @@ public class Login extends javax.swing.JFrame {
         btnEntrar.setEnabled(false);
         mostrarMensagem(null);
         // Consulta fora da thread da interface para a tela não travar se o banco demorar.
-        new javax.swing.SwingWorker<Boolean, Void>() {
+        new javax.swing.SwingWorker<entidades.Usuario, Void>() {
             @Override
-            protected Boolean doInBackground() throws Exception {
-                return usuarioDAO.autenticar(usuario, senha);
+            protected entidades.Usuario doInBackground() throws Exception {
+                return usuarioService.autenticar(usuario, senha);
             }
 
             @Override
             protected void done() {
                 btnEntrar.setEnabled(true);
                 try {
-                    if (get()) {
-                        new Main().setVisible(true);
+                    entidades.Usuario logado = get();
+                    if (logado != null) {
+                        service.Sessao.iniciar(logado);
+                        Main.abrirInicio();
                         dispose();
                     } else {
                         mostrarMensagem("Usuário ou senha incorretos.");
