@@ -36,6 +36,17 @@ CREATE TABLE IF NOT EXISTS "Venda" (
     data_venda TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- Histórico de entradas e ajustes de estoque (#21)
+CREATE TABLE IF NOT EXISTS "MovimentacaoEstoque" (
+    id SERIAL PRIMARY KEY,
+    ingrediente_nome VARCHAR(100) NOT NULL REFERENCES "Estoque"(nome) ON UPDATE CASCADE ON DELETE CASCADE,
+    tipo VARCHAR(20) NOT NULL,
+    quantidade_anterior INTEGER NOT NULL,
+    quantidade_nova INTEGER NOT NULL CHECK (quantidade_nova >= 0),
+    motivo VARCHAR(255),
+    data_movimentacao TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+);
+
 -- Crie o primeiro usuário manualmente antes de abrir o sistema.
 -- Exemplo apenas para ambiente local de desenvolvimento:
 -- INSERT INTO "Login" (usuario, senha) VALUES ('admin', 'troque-esta-senha');

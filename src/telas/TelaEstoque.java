@@ -1,9 +1,6 @@
 package telas;
 
 import entidades.Estoque;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
@@ -20,6 +17,8 @@ public class TelaEstoque extends javax.swing.JFrame {
     }
     Estoque est = new Estoque();
     List<Estoque> listaEstoque = new ArrayList<>();
+    private final dao.EstoqueDAO estoqueDAO = new dao.EstoqueDAO();
+    private final service.EstoqueService estoqueService = new service.EstoqueService();
 
     public void limparCampos() {
         CampoNome.setText("");
@@ -30,6 +29,9 @@ public class TelaEstoque extends javax.swing.JFrame {
     }
 
     public void validaCampos(String op) {
+        boolean selecionado = op.equals("selecionado");
+        btnEntrada.setEnabled(selecionado);
+        btnAjustar.setEnabled(selecionado);
         if (op.equals("inicio")) {
             CampoNome.setEnabled(false);
             CampoCusto.setEnabled(false);
@@ -52,6 +54,10 @@ public class TelaEstoque extends javax.swing.JFrame {
             btnSalvar.setEnabled(true);
             btnCancelar.setEnabled(true);
             btnSair.setEnabled(false);
+        } else if (op.equals("editar")) {
+            // Quantidade só muda por Entrada/Ajustar, para manter o histórico.
+            validaCampos("novo");
+            CampoQnt.setEnabled(false);
         } else if (op.equals("selecionado")) {
             CampoNome.setEnabled(false);
             CampoCusto.setEnabled(false);
@@ -68,10 +74,6 @@ public class TelaEstoque extends javax.swing.JFrame {
 
     public void montaTabela() {
         try {
-            java.sql.Connection con = config.ConexaoBD.getConnection();
-            java.sql.Statement stm = con.createStatement();
-            java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Estoque\"");
-
             javax.swing.table.DefaultTableModel modelo
                     = new javax.swing.table.DefaultTableModel(
                             new String[]{"Nome", "Quantidade", "Valor"}, 0) {
@@ -79,20 +81,14 @@ public class TelaEstoque extends javax.swing.JFrame {
                     return false;
                 }
             };
-            listaEstoque.clear();
-            while (rs.next()) {
-                Estoque e = new Estoque();
-                e.setNome(rs.getString("nome"));
-                e.setQuantidade(rs.getInt("Quantidade"));
-                e.setPreco(rs.getDouble("valor"));
-                listaEstoque.add(e);
+            listaEstoque = estoqueDAO.listar();
+            for (Estoque e : listaEstoque) {
                 modelo.addRow(new Object[]{
                     e.getNome(), e.getQuantidade(),
                     String.format("R$ %.2f", e.getPreco())
                 });
             }
             tabelaItens.setModel(modelo);
-            con.close();
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(null, e.getMessage());
         }
@@ -116,6 +112,8 @@ public class TelaEstoque extends javax.swing.JFrame {
         btnCancelar = new javax.swing.JButton();
         btnSalvar = new javax.swing.JButton();
         btnSair = new javax.swing.JButton();
+        btnEntrada = new javax.swing.JButton();
+        btnAjustar = new javax.swing.JButton();
         txtCusto = new javax.swing.JLabel();
         CampoCusto = new javax.swing.JTextField();
         CampoQnt = new javax.swing.JSpinner();
@@ -193,6 +191,22 @@ public class TelaEstoque extends javax.swing.JFrame {
             }
         });
 
+        btnEntrada.setText("Entrada");
+        btnEntrada.setToolTipText("Registrar entrada de quantidade no item selecionado");
+        btnEntrada.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEntradaActionPerformed(evt);
+            }
+        });
+
+        btnAjustar.setText("Ajustar");
+        btnAjustar.setToolTipText("Ajustar a quantidade do item selecionado informando o motivo");
+        btnAjustar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAjustarActionPerformed(evt);
+            }
+        });
+
         txtCusto.setText("Custo unit: ");
 
         CampoCusto.addActionListener(new java.awt.event.ActionListener() {
@@ -217,6 +231,10 @@ public class TelaEstoque extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnExcluir, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnEntrada, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnAjustar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnSalvar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnCancelar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -234,7 +252,7 @@ public class TelaEstoque extends javax.swing.JFrame {
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(txtQnt)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(CampoQnt, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(CampoQnt, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(txtTipo)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -276,6 +294,8 @@ public class TelaEstoque extends javax.swing.JFrame {
                     .addComponent(btnSalvar, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnCancelar, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnSair, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnEntrada, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnAjustar, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnNovo, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnEditar, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(17, 17, 17))
@@ -295,7 +315,7 @@ public class TelaEstoque extends javax.swing.JFrame {
     }//GEN-LAST:event_btnNovoActionPerformed
 
     private void btnEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditarActionPerformed
-        validaCampos("novo");
+        validaCampos("editar");
     }//GEN-LAST:event_btnEditarActionPerformed
 
     private void btnExcluirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcluirActionPerformed
@@ -307,10 +327,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             return;
         }
         try {
-            java.sql.Connection con = config.ConexaoBD.getConnection();
-            con.createStatement().execute(
-                    "DELETE FROM \"Estoque\" WHERE nome = '" + est.getNome() + "'");
-            con.close();
+            estoqueDAO.excluir(est.getNome());
             limparCampos();
             montaTabela();
             validaCampos("inicio");
@@ -326,27 +343,28 @@ public class TelaEstoque extends javax.swing.JFrame {
             javax.swing.JOptionPane.showMessageDialog(null, "Informe o nome.");
             return;
         }
+        double custo;
         try {
-            java.sql.Connection con = config.ConexaoBD.getConnection();
-            java.sql.Statement stm = con.createStatement();
-
-            String nome = CampoNome.getText().trim();
-            int qtd = (int) ((javax.swing.SpinnerNumberModel) CampoQnt.getModel()).getNumber();
-            double custo = Double.parseDouble(CampoCusto.getText().trim());
-            String tipo = ComboBoxTipo.getSelectedItem().toString();
+            custo = Double.parseDouble(CampoCusto.getText().trim().replace(',', '.'));
+        } catch (NumberFormatException e) {
+            javax.swing.JOptionPane.showMessageDialog(null, "Informe um custo válido. Ex.: 2,50");
+            return;
+        }
+        try {
+            Estoque item = new Estoque();
+            item.setNome(CampoNome.getText().trim());
+            item.setPreco(custo);
+            item.setQuantidade((Integer) CampoQnt.getValue());
 
             if (est.getNome() != null && !est.getNome().isEmpty()) {
-                // EDITAR
-                stm.execute("UPDATE \"Estoque\" SET nome = '" + nome
-                        + "', valor = " + custo
-                        + ", \"Quantidade\" = " + qtd
-                        + " WHERE nome = '" + est.getNome() + "'");
+                estoqueDAO.atualizarCadastro(est.getNome(), item);
             } else {
-                // NOVO
-                stm.execute("INSERT INTO \"Estoque\" (nome, valor, \"Quantidade\") VALUES ('"
-                        + nome + "', " + custo + ", " + qtd + ")");
+                if (item.getQuantidade() < 0) {
+                    javax.swing.JOptionPane.showMessageDialog(null, "A quantidade não pode ser negativa.");
+                    return;
+                }
+                estoqueDAO.inserir(item);
             }
-            con.close();
             limparCampos();
             montaTabela();
             validaCampos("inicio");
@@ -379,6 +397,81 @@ public class TelaEstoque extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_CampoCustoActionPerformed
 
+    private void btnEntradaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEntradaActionPerformed
+        movimentarEstoque(false);
+    }//GEN-LAST:event_btnEntradaActionPerformed
+
+    private void btnAjustarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAjustarActionPerformed
+        movimentarEstoque(true);
+    }//GEN-LAST:event_btnAjustarActionPerformed
+
+    /**
+     * Abre a janela de entrada (ajuste = false) ou de ajuste (ajuste = true)
+     * do item selecionado, mostrando a quantidade atual e o resultado antes
+     * de confirmar.
+     */
+    private void movimentarEstoque(boolean ajuste) {
+        if (est.getNome() == null || est.getNome().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Selecione um item na tabela.");
+            return;
+        }
+        String nome = est.getNome();
+        int atual;
+        try {
+            atual = estoqueDAO.quantidadeAtual(nome);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
+            return;
+        }
+
+        javax.swing.JSpinner campoQtd = new javax.swing.JSpinner(ajuste
+                ? new javax.swing.SpinnerNumberModel(atual, 0, Integer.MAX_VALUE, 1)
+                : new javax.swing.SpinnerNumberModel(1, 1, Integer.MAX_VALUE, 1));
+        javax.swing.JTextField campoMotivo = new javax.swing.JTextField(20);
+        javax.swing.JLabel resultado = new javax.swing.JLabel();
+        Runnable atualizarResultado = () -> {
+            int valor = (Integer) campoQtd.getValue();
+            int nova = ajuste ? valor : atual + valor;
+            int diferenca = nova - atual;
+            resultado.setText("Ficará com: " + nova + "  (" + (diferenca >= 0 ? "+" : "") + diferenca + ")");
+        };
+        campoQtd.addChangeListener(e -> atualizarResultado.run());
+        atualizarResultado.run();
+
+        javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.GridLayout(0, 1, 0, 6));
+        painel.add(new javax.swing.JLabel("Item: " + nome));
+        painel.add(new javax.swing.JLabel("Quantidade atual: " + atual));
+        painel.add(new javax.swing.JLabel(ajuste ? "Quantidade correta (contagem):" : "Quantidade recebida:"));
+        painel.add(campoQtd);
+        if (ajuste) {
+            painel.add(new javax.swing.JLabel("Motivo do ajuste:"));
+            painel.add(campoMotivo);
+        }
+        painel.add(resultado);
+
+        int opcao = JOptionPane.showConfirmDialog(this, painel,
+                ajuste ? "Ajustar estoque" : "Entrada de estoque",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (opcao != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        try {
+            int valor = (Integer) campoQtd.getValue();
+            int nova = ajuste
+                    ? estoqueService.ajustar(nome, valor, campoMotivo.getText())
+                    : estoqueService.registrarEntrada(nome, valor);
+            limparCampos();
+            montaTabela();
+            validaCampos("inicio");
+            JOptionPane.showMessageDialog(this, "Estoque de \"" + nome + "\" atualizado para " + nova + ".");
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Atenção", JOptionPane.WARNING_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
+        }
+    }
+
     /**
      * @param args the command line arguments
      */
@@ -410,8 +503,10 @@ public class TelaEstoque extends javax.swing.JFrame {
     private javax.swing.JSpinner CampoQnt;
     private javax.swing.JComboBox<String> ComboBoxTipo;
     private javax.swing.JLabel TxtNome;
+    private javax.swing.JButton btnAjustar;
     private javax.swing.JButton btnCancelar;
     private javax.swing.JButton btnEditar;
+    private javax.swing.JButton btnEntrada;
     private javax.swing.JButton btnExcluir;
     private javax.swing.JButton btnNovo;
     private javax.swing.JButton btnSair;
