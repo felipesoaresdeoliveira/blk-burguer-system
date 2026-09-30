@@ -67,6 +67,10 @@ ALTER TABLE "Estoque" ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) NOT NULL DEFAULT
 -- Permite usar e-mail como usuário (bancos criados antes tinham VARCHAR(25))
 ALTER TABLE "Login" ALTER COLUMN usuario TYPE VARCHAR(100);
 
+-- Quantidade mínima para alerta de estoque baixo (#26)
+ALTER TABLE "Estoque" ADD COLUMN IF NOT EXISTS estoque_minimo INTEGER NOT NULL DEFAULT 10
+    CHECK (estoque_minimo >= 0);
+
 -- Crie o primeiro usuário manualmente antes de abrir o sistema.
 -- Exemplo apenas para ambiente local de desenvolvimento:
 -- INSERT INTO "Login" (usuario, senha) VALUES ('admin', 'troque-esta-senha');

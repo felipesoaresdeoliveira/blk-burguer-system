@@ -59,7 +59,11 @@
                               <Component id="txtQnt" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="CampoQnt" min="-2" pref="80" max="-2" attributes="0"/>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                              <Component id="txtMinimo" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
+                              <Component id="CampoMinimo" min="-2" pref="80" max="-2" attributes="0"/>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
                               <Component id="txtTipo" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="ComboBoxTipo" max="32767" attributes="0"/>
@@ -99,6 +103,8 @@
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="txtQnt" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="CampoQnt" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="txtMinimo" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="CampoMinimo" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="txtTipo" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="ComboBoxTipo" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
@@ -272,6 +278,19 @@
       </Events>
     </Component>
     <Component class="javax.swing.JSpinner" name="CampoQnt">
+    </Component>
+    <Component class="javax.swing.JLabel" name="txtMinimo">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Mínimo:"/>
+        <Property name="toolTipText" type="java.lang.String" value="Abaixo desta quantidade o item aparece como estoque baixo"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JSpinner" name="CampoMinimo">
+      <Properties>
+        <Property name="model" type="javax.swing.SpinnerModel" editor="org.netbeans.modules.form.editors2.SpinnerModelEditor">
+          <SpinnerModel initial="10" minimum="0" numberType="java.lang.Integer" stepSize="1" type="number"/>
+        </Property>
+      </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="txtTipo">
       <Properties>

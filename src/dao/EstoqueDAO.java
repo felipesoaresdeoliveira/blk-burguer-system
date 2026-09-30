@@ -16,7 +16,7 @@ public class EstoqueDAO {
         List<Estoque> itens = new ArrayList<>();
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(
-                        "SELECT nome, valor, \"Quantidade\", tipo FROM \"Estoque\" ORDER BY nome");
+                        "SELECT nome, valor, \"Quantidade\", tipo, estoque_minimo FROM \"Estoque\" ORDER BY nome");
                 ResultSet rs = pst.executeQuery()) {
             while (rs.next()) {
                 Estoque e = new Estoque();
@@ -24,6 +24,7 @@ public class EstoqueDAO {
                 e.setPreco(rs.getDouble("valor"));
                 e.setQuantidade(rs.getInt("Quantidade"));
                 e.setTipo(rs.getString("tipo"));
+                e.setMinimo(rs.getInt("estoque_minimo"));
                 itens.add(e);
             }
         }
@@ -33,24 +34,26 @@ public class EstoqueDAO {
     public void inserir(Estoque item) throws SQLException {
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(
-                        "INSERT INTO \"Estoque\" (nome, valor, \"Quantidade\", tipo) VALUES (?, ?, ?, ?)")) {
+                        "INSERT INTO \"Estoque\" (nome, valor, \"Quantidade\", tipo, estoque_minimo) VALUES (?, ?, ?, ?, ?)")) {
             pst.setString(1, item.getNome());
             pst.setDouble(2, item.getPreco());
             pst.setInt(3, item.getQuantidade());
             pst.setString(4, item.getTipo());
+            pst.setInt(5, item.getMinimo());
             pst.executeUpdate();
         }
     }
 
-    /** Atualiza nome, custo e tipo. A quantidade só muda por entrada ou ajuste. */
+    /** Atualiza nome, custo, tipo e mínimo. A quantidade só muda por entrada ou ajuste. */
     public void atualizarCadastro(String nomeAtual, Estoque item) throws SQLException {
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(
-                        "UPDATE \"Estoque\" SET nome = ?, valor = ?, tipo = ? WHERE nome = ?")) {
+                        "UPDATE \"Estoque\" SET nome = ?, valor = ?, tipo = ?, estoque_minimo = ? WHERE nome = ?")) {
             pst.setString(1, item.getNome());
             pst.setDouble(2, item.getPreco());
             pst.setString(3, item.getTipo());
-            pst.setString(4, nomeAtual);
+            pst.setInt(4, item.getMinimo());
+            pst.setString(5, nomeAtual);
             pst.executeUpdate();
         }
     }
