@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS "Login" (
     "Id" SERIAL PRIMARY KEY,
-    usuario VARCHAR(25) NOT NULL UNIQUE,
+    usuario VARCHAR(100) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL
 );
 
@@ -63,6 +63,9 @@ ALTER TABLE "Venda" ADD COLUMN IF NOT EXISTS pedido_id INTEGER REFERENCES "Pedid
 -- Categoria do item de estoque (#14)
 ALTER TABLE "Estoque" ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) NOT NULL DEFAULT 'Ingrediente'
     CHECK (tipo IN ('Ingrediente', 'Bebida', 'Acompanhamento'));
+
+-- Permite usar e-mail como usuário (bancos criados antes tinham VARCHAR(25))
+ALTER TABLE "Login" ALTER COLUMN usuario TYPE VARCHAR(100);
 
 -- Crie o primeiro usuário manualmente antes de abrir o sistema.
 -- Exemplo apenas para ambiente local de desenvolvimento:

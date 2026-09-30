@@ -38,6 +38,8 @@ database/schema.sql
 
 O schema versionado cria as tabelas utilizadas atualmente pelo sistema: `Login`, `Estoque`, `Produto`, `ProdutoIngrediente` e `Venda`.
 
+Para ter um cardápio, estoque e vendas de exemplo (útil para testes e apresentação), execute em seguida `database/dados-exemplo.sql` em um banco vazio. Ele não cria usuários.
+
 O backup binário antigo do PostgreSQL não é necessário para criar uma instalação nova do sistema.
 
 ### 3. Configurar a conexão
