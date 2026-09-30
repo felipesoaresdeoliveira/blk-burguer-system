@@ -8,6 +8,14 @@ public class Login extends javax.swing.JFrame {
 
     public Login() {
         initComponents();
+        ui.Tema.janela(this);
+        ui.Tema.titulo(lblTitulo);
+        ui.Tema.secundario(lblSubtitulo);
+        ui.Tema.primario(btnEntrar);
+        lblMensagem.setForeground(ui.Tema.PERIGO);
+        campoUsuario.putClientProperty("JTextField.placeholderText", "seu usuário ou e-mail");
+        campoSenha.putClientProperty("JTextField.placeholderText", "sua senha");
+        campoSenha.putClientProperty("FlatLaf.style", "showRevealButton: true");
         // Enter em qualquer campo aciona o botão Entrar.
         getRootPane().setDefaultButton(btnEntrar);
         setLocationRelativeTo(null);
@@ -145,18 +153,7 @@ public class Login extends javax.swing.JFrame {
     }//GEN-LAST:event_btnEntrarActionPerformed
 
     public static void main(String args[]) {
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
+        ui.Tema.aplicar();
 
         java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
     }

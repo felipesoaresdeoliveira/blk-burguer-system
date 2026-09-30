@@ -21,6 +21,11 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
 
     public TelaHistoricoVendas() {
         initComponents();
+        ui.Tema.janela(this);
+        ui.Tema.titulo(lblTitulo);
+        ui.Tema.primario(btnFiltrar);
+        txtDataInicio.putClientProperty("JTextField.placeholderText", "dd/mm/aaaa");
+        txtDataFim.putClientProperty("JTextField.placeholderText", "dd/mm/aaaa");
         tabelaVendas.getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         tabelaVendas.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {

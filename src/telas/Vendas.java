@@ -73,17 +73,17 @@ public class Vendas extends javax.swing.JFrame {
             campoRecebido.setEnabled(dinheiro);
             if (!dinheiro) {
                 lblTroco.setText("Troco: R$ 0,00");
-                lblTroco.setForeground(new java.awt.Color(0, 153, 51));
+                lblTroco.setForeground(ui.Tema.SUCESSO);
                 return;
             }
             Double recebido = lerValor(campoRecebido.getText());
             double troco = recebido == null ? -total : service.VendaService.troco(total, recebido);
             if (troco < 0) {
                 lblTroco.setText(String.format("Faltam: R$ %.2f", -troco));
-                lblTroco.setForeground(new java.awt.Color(204, 0, 0));
+                lblTroco.setForeground(ui.Tema.PERIGO);
             } else {
                 lblTroco.setText(String.format("Troco: R$ %.2f", troco));
-                lblTroco.setForeground(new java.awt.Color(0, 153, 51));
+                lblTroco.setForeground(ui.Tema.SUCESSO);
             }
         };
         campoForma.addActionListener(e -> atualizar.run());
@@ -134,6 +134,12 @@ public class Vendas extends javax.swing.JFrame {
 
     public Vendas() {
         initComponents();
+        ui.Tema.janela(this);
+        ui.Tema.titulo(BLKBurguer1);
+        ui.Tema.primario(BtnFinalizarVenda);
+        ui.Tema.perigo(cancelarVenda);
+        NumeroTotal1.setForeground(ui.Tema.DESTAQUE);
+        SelectQnt1.setModel(new javax.swing.SpinnerNumberModel(1, 1, 999, 1));
         carregarEstoque();
         atualizarTabela();
         setLocationRelativeTo(null);
@@ -198,7 +204,7 @@ public class Vendas extends javax.swing.JFrame {
         });
 
         TxtTotal1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        TxtTotal1.setText("Total:  R$");
+        TxtTotal1.setText("Total:");
 
         BLKBurguer1.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
         BLKBurguer1.setText("BLK BURGUER - Vendas");
