@@ -76,7 +76,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         try {
             javax.swing.table.DefaultTableModel modelo
                     = new javax.swing.table.DefaultTableModel(
-                            new String[]{"Nome", "Quantidade", "Valor"}, 0) {
+                            new String[]{"Nome", "Tipo", "Quantidade", "Custo unit."}, 0) {
                 public boolean isCellEditable(int r, int c) {
                     return false;
                 }
@@ -84,7 +84,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             listaEstoque = estoqueDAO.listar();
             for (Estoque e : listaEstoque) {
                 modelo.addRow(new Object[]{
-                    e.getNome(), e.getQuantidade(),
+                    e.getNome(), e.getTipo(), e.getQuantidade(),
                     String.format("R$ %.2f", e.getPreco())
                 });
             }
@@ -355,6 +355,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             item.setNome(CampoNome.getText().trim());
             item.setPreco(custo);
             item.setQuantidade((Integer) CampoQnt.getValue());
+            item.setTipo(ComboBoxTipo.getSelectedItem().toString());
 
             if (est.getNome() != null && !est.getNome().isEmpty()) {
                 estoqueDAO.atualizarCadastro(est.getNome(), item);
@@ -389,6 +390,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         CampoNome.setText(est.getNome());
         CampoCusto.setText(String.valueOf(est.getPreco()));
         CampoQnt.setValue(est.getQuantidade());
+        ComboBoxTipo.setSelectedItem(est.getTipo());
         validaCampos("selecionado");
 
     }//GEN-LAST:event_tabelaItensMouseClicked

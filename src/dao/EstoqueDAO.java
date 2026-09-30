@@ -16,13 +16,14 @@ public class EstoqueDAO {
         List<Estoque> itens = new ArrayList<>();
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(
-                        "SELECT nome, valor, \"Quantidade\" FROM \"Estoque\" ORDER BY nome");
+                        "SELECT nome, valor, \"Quantidade\", tipo FROM \"Estoque\" ORDER BY nome");
                 ResultSet rs = pst.executeQuery()) {
             while (rs.next()) {
                 Estoque e = new Estoque();
                 e.setNome(rs.getString("nome"));
                 e.setPreco(rs.getDouble("valor"));
                 e.setQuantidade(rs.getInt("Quantidade"));
+                e.setTipo(rs.getString("tipo"));
                 itens.add(e);
             }
         }
@@ -32,22 +33,24 @@ public class EstoqueDAO {
     public void inserir(Estoque item) throws SQLException {
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(
-                        "INSERT INTO \"Estoque\" (nome, valor, \"Quantidade\") VALUES (?, ?, ?)")) {
+                        "INSERT INTO \"Estoque\" (nome, valor, \"Quantidade\", tipo) VALUES (?, ?, ?, ?)")) {
             pst.setString(1, item.getNome());
             pst.setDouble(2, item.getPreco());
             pst.setInt(3, item.getQuantidade());
+            pst.setString(4, item.getTipo());
             pst.executeUpdate();
         }
     }
 
-    /** Atualiza nome e custo. A quantidade só muda por entrada ou ajuste. */
+    /** Atualiza nome, custo e tipo. A quantidade só muda por entrada ou ajuste. */
     public void atualizarCadastro(String nomeAtual, Estoque item) throws SQLException {
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(
-                        "UPDATE \"Estoque\" SET nome = ?, valor = ? WHERE nome = ?")) {
+                        "UPDATE \"Estoque\" SET nome = ?, valor = ?, tipo = ? WHERE nome = ?")) {
             pst.setString(1, item.getNome());
             pst.setDouble(2, item.getPreco());
-            pst.setString(3, nomeAtual);
+            pst.setString(3, item.getTipo());
+            pst.setString(4, nomeAtual);
             pst.executeUpdate();
         }
     }

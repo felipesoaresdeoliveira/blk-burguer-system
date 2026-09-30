@@ -60,6 +60,10 @@ CREATE TABLE IF NOT EXISTS "Pedido" (
 -- Itens antigos ficam com pedido_id NULL e aparecem como vendas avulsas.
 ALTER TABLE "Venda" ADD COLUMN IF NOT EXISTS pedido_id INTEGER REFERENCES "Pedido"(id);
 
+-- Categoria do item de estoque (#14)
+ALTER TABLE "Estoque" ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) NOT NULL DEFAULT 'Ingrediente'
+    CHECK (tipo IN ('Ingrediente', 'Bebida', 'Acompanhamento'));
+
 -- Crie o primeiro usuário manualmente antes de abrir o sistema.
 -- Exemplo apenas para ambiente local de desenvolvimento:
 -- INSERT INTO "Login" (usuario, senha) VALUES ('admin', 'troque-esta-senha');

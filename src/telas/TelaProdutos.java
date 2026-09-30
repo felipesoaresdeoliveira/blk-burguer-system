@@ -13,6 +13,8 @@ public class TelaProdutos extends javax.swing.JFrame {
     private final dao.ProdutoDAO produtoDAO = new dao.ProdutoDAO();
     private final dao.EstoqueDAO estoqueDAO = new dao.EstoqueDAO();
     private List<Estoque> listaIngredientes = new ArrayList<>();
+    /** Itens exibidos no combo de ingredientes, conforme o tipo do produto. */
+    private final List<Estoque> opcoesIngrediente = new ArrayList<>();
     private List<Produto> listaProdutos = new ArrayList<>();
     /** Ficha técnica em edição: ingrediente -> quantidade por unidade do produto. */
     private final Map<String, Integer> composicao = new LinkedHashMap<>();
@@ -45,14 +47,38 @@ public class TelaProdutos extends javax.swing.JFrame {
     }
 
     public void carregarIngredientes() {
-        cBoxAddIngrediente.removeAllItems();
         try {
             listaIngredientes = estoqueDAO.listar();
-            for (Estoque e : listaIngredientes) {
-                cBoxAddIngrediente.addItem(e.getNome());
-            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
+        }
+        filtrarIngredientes();
+    }
+
+    /**
+     * Itens de estoque que podem compor um produto do tipo informado: lanche usa
+     * ingredientes, bebida usa bebidas (venda direta) e acompanhamento usa
+     * ingredientes ou acompanhamentos.
+     */
+    private static boolean podeCompor(String tipoProduto, String tipoItem) {
+        if ("Bebida".equals(tipoProduto)) {
+            return Estoque.BEBIDA.equals(tipoItem);
+        }
+        if ("Acompanhamento".equals(tipoProduto)) {
+            return !Estoque.BEBIDA.equals(tipoItem);
+        }
+        return Estoque.INGREDIENTE.equals(tipoItem);
+    }
+
+    private void filtrarIngredientes() {
+        cBoxAddIngrediente.removeAllItems();
+        opcoesIngrediente.clear();
+        String tipoProduto = String.valueOf(ComboboxTipo.getSelectedItem());
+        for (Estoque e : listaIngredientes) {
+            if (podeCompor(tipoProduto, e.getTipo())) {
+                opcoesIngrediente.add(e);
+                cBoxAddIngrediente.addItem(e.getNome());
+            }
         }
     }
 
@@ -148,6 +174,7 @@ public class TelaProdutos extends javax.swing.JFrame {
     public TelaProdutos() {
         initComponents();
         setLocationRelativeTo(null);
+        ComboboxTipo.addActionListener(e -> filtrarIngredientes());
         carregarIngredientes();
         montaTabelaProdutos();
         atualizarTabelaIngredientes();
@@ -571,7 +598,7 @@ public class TelaProdutos extends javax.swing.JFrame {
             if (qtd <= 0) {
                 throw new NumberFormatException();
             }
-            String nome = listaIngredientes.get(cBoxAddIngrediente.getSelectedIndex()).getNome();
+            String nome = opcoesIngrediente.get(cBoxAddIngrediente.getSelectedIndex()).getNome();
             // Ingrediente repetido soma na quantidade existente.
             composicao.merge(nome, qtd, Integer::sum);
             atualizarTabelaIngredientes();
