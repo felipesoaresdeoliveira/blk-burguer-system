@@ -14,7 +14,7 @@ Sistema de gestão de hamburgueria desenvolvido em Java Swing com PostgreSQL par
 ## Tecnologias
 
 - Java 8
-- Java Swing
+- Java Swing + [FlatLaf](https://www.formdev.com/flatlaf/) (tema escuro BLK)
 - PostgreSQL
 - Ant
 - NetBeans
@@ -62,7 +62,14 @@ ant clean compile
 ant run
 ```
 
-O comando `ant run` baixa automaticamente o driver JDBC PostgreSQL 42.7.13 para a pasta `lib/` quando necessário. O arquivo `.jar` não é versionado.
+O Ant baixa automaticamente as dependências para a pasta `lib/` quando necessário (driver JDBC PostgreSQL 42.7.13 e FlatLaf 3.7.2). Os arquivos `.jar` não são versionados.
+
+**NetBeans:** antes de abrir o projeto pela primeira vez, rode `ant deps` para baixar os `.jar` de `lib/`, que já estão referenciados no classpath do projeto.
+
+## Visual e dashboard
+
+- Toda a identidade visual (cores, fontes, botões) fica em `ui.Tema`. As telas não usam cores fixas; use `Tema.titulo`, `Tema.primario` e `Tema.perigo` no construtor.
+- A tela inicial (`telas.Main`) é um dashboard com indicadores do dia e gráficos dos últimos 7 dias. Os gráficos são componentes próprios em `ui/` (`GraficoColunas`, `GraficoRosca`, `GraficoBarras`, `PainelAlertas`, `CartaoIndicador`) e já estão declarados no `Main.form`, então o designer do NetBeans os exibe normalmente (depois de compilar o projeto).
 
 ## Estrutura de branches
 

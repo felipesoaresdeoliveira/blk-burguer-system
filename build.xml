@@ -10,25 +10,38 @@
     <property name="postgresql.version" value="42.7.13"/>
     <property name="postgresql.jar" value="${lib.dir}/postgresql-${postgresql.version}.jar"/>
     <property name="postgresql.url" value="https://repo1.maven.org/maven2/org/postgresql/postgresql/${postgresql.version}/postgresql-${postgresql.version}.jar"/>
+    <property name="flatlaf.version" value="3.7.2"/>
+    <property name="flatlaf.jar" value="${lib.dir}/flatlaf-${flatlaf.version}.jar"/>
+    <property name="flatlaf.url" value="https://repo1.maven.org/maven2/com/formdev/flatlaf/${flatlaf.version}/flatlaf-${flatlaf.version}.jar"/>
+
+    <path id="app.classpath">
+        <pathelement location="${postgresql.jar}"/>
+        <pathelement location="${flatlaf.jar}"/>
+    </path>
 
     <target name="init">
         <mkdir dir="${classes.dir}"/>
         <mkdir dir="${dist.dir}"/>
     </target>
 
-    <target name="compile" depends="init" description="Compila o código-fonte">
+    <target name="compile" depends="init,deps" description="Compila o código-fonte">
         <javac srcdir="${src.dir}"
                destdir="${classes.dir}"
                source="8"
                target="8"
                encoding="UTF-8"
-               includeantruntime="false"/>
+               includeantruntime="false"
+               classpathref="app.classpath"/>
     </target>
 
-    <target name="deps" description="Baixa o driver JDBC do PostgreSQL para execução local">
+    <target name="deps" description="Baixa as dependências (driver PostgreSQL e tema FlatLaf) para lib/">
         <mkdir dir="${lib.dir}"/>
         <get src="${postgresql.url}"
              dest="${postgresql.jar}"
+             skipexisting="true"
+             usetimestamp="true"/>
+        <get src="${flatlaf.url}"
+             dest="${flatlaf.jar}"
              skipexisting="true"
              usetimestamp="true"/>
     </target>
@@ -45,7 +58,7 @@
         <java classname="telas.Login" fork="true">
             <classpath>
                 <pathelement location="${classes.dir}"/>
-                <pathelement location="${postgresql.jar}"/>
+                <path refid="app.classpath"/>
             </classpath>
         </java>
     </target>

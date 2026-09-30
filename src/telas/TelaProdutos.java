@@ -140,7 +140,7 @@ public class TelaProdutos extends javax.swing.JFrame {
             return;
         }
         double lucro = preco - custo;
-        java.awt.Color cor = lucro < 0 ? new java.awt.Color(204, 0, 0) : new java.awt.Color(0, 153, 51);
+        java.awt.Color cor = lucro < 0 ? ui.Tema.PERIGO : ui.Tema.SUCESSO;
         txtValorMargem.setForeground(cor);
         lblMargemPercentual.setForeground(cor);
         txtValorMargem.setText(String.format("%.2f", lucro));
@@ -173,6 +173,12 @@ public class TelaProdutos extends javax.swing.JFrame {
 
     public TelaProdutos() {
         initComponents();
+        ui.Tema.janela(this);
+        ui.Tema.titulo(txtTitle);
+        ui.Tema.primario(btnSalvar);
+        ui.Tema.perigo(btnExcluir);
+        valorCEstimado.setForeground(ui.Tema.TEXTO);
+        lblAvisoPreco.setForeground(ui.Tema.PERIGO);
         setLocationRelativeTo(null);
         ComboboxTipo.addActionListener(e -> filtrarIngredientes());
         carregarIngredientes();
