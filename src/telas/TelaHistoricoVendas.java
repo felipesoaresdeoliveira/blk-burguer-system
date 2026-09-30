@@ -257,8 +257,7 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
     }//GEN-LAST:event_btnLimparActionPerformed
 
     private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed
-        new Main().setVisible(true);
-        dispose();
+        Main.voltar(this);
     }//GEN-LAST:event_btnVoltarActionPerformed
 
     public static void main(String args[]) {

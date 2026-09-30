@@ -8,6 +8,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import entidades.Modulo;
+import entidades.Perfil;
+import entidades.Usuario;
+import service.Sessao;
 import ui.CartaoIndicador;
 import ui.Tema;
 
@@ -22,9 +26,92 @@ public class Main extends javax.swing.JFrame {
     public Main() {
         initComponents();
         aplicarVisual();
+        aplicarPermissoes();
         setSize(1280, 800);
         setLocationRelativeTo(null);
-        carregarDados();
+        if (Sessao.pode(Modulo.DASHBOARD)) {
+            carregarDados();
+        }
+    }
+
+    // ------------------------------------------------------------ navegação
+
+    /** Abre a tela inicial do usuário logado: a cozinha vai direto para o painel da TV. */
+    public static void abrirInicio() {
+        Usuario u = Sessao.usuario();
+        if (u != null && u.getPerfil() == Perfil.COZINHA) {
+            TelaCozinha.abrirTelaCheia();
+        } else {
+            new Main().setVisible(true);
+        }
+    }
+
+    /** Volta de uma tela para o início do usuário. */
+    public static void voltar(javax.swing.JFrame tela) {
+        tela.dispose();
+        abrirInicio();
+    }
+
+    /** Encerra a sessão e volta para o login. */
+    public static void sair(javax.swing.JFrame tela) {
+        Sessao.encerrar();
+        tela.dispose();
+        new Login().setVisible(true);
+    }
+
+    /** Esconde do menu o que o perfil não acessa; sem dashboard, mostra atalhos. */
+    private void aplicarPermissoes() {
+        Object[][] itens = {
+            {btnVisaoGeral, Modulo.DASHBOARD}, {btnVenda, Modulo.VENDA_BALCAO}, {btnCaixa, Modulo.CAIXA},
+            {btnCozinha, Modulo.COZINHA}, {btnHistorico, Modulo.HISTORICO}, {btnProdutos, Modulo.PRODUTOS},
+            {btnEstoque, Modulo.ESTOQUE}, {btnRelatorio, Modulo.RELATORIOS}, {btnUsuarios, Modulo.USUARIOS}};
+        java.util.List<javax.swing.JButton> atalhos = new java.util.ArrayList<>();
+        for (Object[] item : itens) {
+            javax.swing.JButton b = (javax.swing.JButton) item[0];
+            boolean pode = Sessao.pode((Modulo) item[1]);
+            if (!pode) {
+                // Remover (e não só esconder): a grade não deixa buraco no menu.
+                painelBotoes.remove(b);
+            }
+            if (pode && b != btnVisaoGeral) {
+                atalhos.add(b);
+            }
+        }
+        Usuario u = Sessao.usuario();
+        lblUsuarioLogado.setText(u == null ? "Não identificado"
+                : "<html><b>" + u.getNome() + "</b><br>" + u.getPerfil() + "</html>");
+        if (!Sessao.pode(Modulo.DASHBOARD)) {
+            btnAtualizar.setVisible(false);
+            lblTitulo.setText("Olá, " + (u == null ? "" : u.getNome()) + "!");
+            lblData.setText("Escolha o que deseja fazer");
+            painelConteudo.remove(painelCorpo);
+            painelConteudo.add(montarAtalhos(atalhos), java.awt.BorderLayout.CENTER);
+        }
+    }
+
+    /** Botões grandes para os módulos do perfil (usado por quem não vê o dashboard). */
+    private javax.swing.JPanel montarAtalhos(java.util.List<javax.swing.JButton> modulos) {
+        javax.swing.JPanel grade = new javax.swing.JPanel(new java.awt.GridLayout(0, 3, 16, 16));
+        grade.setBackground(Tema.FUNDO);
+        for (javax.swing.JButton origem : modulos) {
+            javax.swing.JButton b = new javax.swing.JButton(origem.getText());
+            b.setFont(b.getFont().deriveFont(java.awt.Font.BOLD, 20f));
+            b.setPreferredSize(new java.awt.Dimension(260, 120));
+            b.setFocusable(false);
+            if (origem == btnVenda) {
+                Tema.primario(b);
+                b.putClientProperty("FlatLaf.style", "background: #F5A524; foreground: #141414; font: bold +8;"
+                        + " hoverBackground: #FFB63D; borderWidth: 0; arc: 16");
+            } else {
+                b.putClientProperty("FlatLaf.style", "background: #1C1C1B; hoverBackground: #262625; font: bold +8; arc: 16");
+            }
+            b.addActionListener(e -> origem.doClick());
+            grade.add(b);
+        }
+        javax.swing.JPanel topo = new javax.swing.JPanel(new java.awt.BorderLayout());
+        topo.setBackground(Tema.FUNDO);
+        topo.add(grade, java.awt.BorderLayout.NORTH);
+        return topo;
     }
 
     private void aplicarVisual() {
@@ -34,7 +121,7 @@ public class Main extends javax.swing.JFrame {
         painelMenu.setBorder(javax.swing.BorderFactory.createCompoundBorder(
                 javax.swing.BorderFactory.createMatteBorder(0, 0, 0, 1, Tema.BORDA),
                 painelMenu.getBorder()));
-        for (javax.swing.JPanel p : new javax.swing.JPanel[]{painelNavegacao, painelMarca, painelBotoes}) {
+        for (javax.swing.JPanel p : new javax.swing.JPanel[]{painelNavegacao, painelMarca, painelBotoes, painelRodape}) {
             p.setOpaque(false);
         }
         for (javax.swing.JPanel p : new javax.swing.JPanel[]{painelConteudo, painelCabecalho, painelTitulo, painelAcoes,
@@ -45,8 +132,8 @@ public class Main extends javax.swing.JFrame {
         Tema.secundario(lblSlogan, lblData);
         lblTitulo.setForeground(Tema.TEXTO);
 
-        for (javax.swing.JButton b : new javax.swing.JButton[]{btnVisaoGeral, btnVenda, btnHistorico,
-            btnProdutos, btnEstoque, btnRelatorio, btnSair}) {
+        for (javax.swing.JButton b : new javax.swing.JButton[]{btnVisaoGeral, btnVenda, btnCaixa, btnCozinha,
+            btnHistorico, btnProdutos, btnEstoque, btnRelatorio, btnUsuarios, btnSair}) {
             b.putClientProperty("JButton.buttonType", "toolBarButton");
             b.putClientProperty("FlatLaf.style", "margin: 9,12,9,12; font: +1; hoverBackground: #1F1F1E");
             b.setFocusable(false);
@@ -60,6 +147,7 @@ public class Main extends javax.swing.JFrame {
         btnVenda.putClientProperty("FlatLaf.style", "margin: 9,12,9,12; font: +1 bold; background: #F5A524;"
                 + " foreground: #141414; hoverBackground: #FFB63D; borderWidth: 0; focusWidth: 0");
         btnSair.setForeground(Tema.TEXTO_FRACO);
+        lblUsuarioLogado.setForeground(Tema.TEXTO_SECUNDARIO);
         getRootPane().setDefaultButton(null);
     }
 
@@ -215,17 +303,18 @@ public class Main extends javax.swing.JFrame {
         painelAlertas.setDados(nomes, qtd, min);
     }
 
-    /**
-     * Abre a tela inicial do usuário logado. O painel da cozinha (tela cheia
-     * para a TV) ainda será criado; por enquanto todos os perfis entram aqui.
-     */
-    public static void abrirInicio() {
-        new Main().setVisible(true);
-    }
-
     private void abrir(javax.swing.JFrame tela) {
         tela.setVisible(true);
         dispose();
+    }
+
+    /** Abre a tela só se o perfil tiver acesso (proteção extra além do menu). */
+    private void abrirSePuder(Modulo modulo, java.util.function.Supplier<javax.swing.JFrame> tela) {
+        if (!Sessao.pode(modulo)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Seu perfil não tem acesso a " + modulo + ".");
+            return;
+        }
+        abrir(tela.get());
     }
 
     @SuppressWarnings("unchecked")
@@ -240,10 +329,15 @@ public class Main extends javax.swing.JFrame {
         painelBotoes = new javax.swing.JPanel();
         btnVisaoGeral = new javax.swing.JButton();
         btnVenda = new javax.swing.JButton();
+        btnCaixa = new javax.swing.JButton();
+        btnCozinha = new javax.swing.JButton();
         btnHistorico = new javax.swing.JButton();
         btnProdutos = new javax.swing.JButton();
         btnEstoque = new javax.swing.JButton();
         btnRelatorio = new javax.swing.JButton();
+        btnUsuarios = new javax.swing.JButton();
+        painelRodape = new javax.swing.JPanel();
+        lblUsuarioLogado = new javax.swing.JLabel();
         btnSair = new javax.swing.JButton();
         painelConteudo = new javax.swing.JPanel();
         painelCabecalho = new javax.swing.JPanel();
@@ -302,6 +396,24 @@ public class Main extends javax.swing.JFrame {
         });
         painelBotoes.add(btnVenda);
 
+        btnCaixa.setText("Caixa");
+        btnCaixa.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnCaixa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCaixaActionPerformed(evt);
+            }
+        });
+        painelBotoes.add(btnCaixa);
+
+        btnCozinha.setText("Cozinha");
+        btnCozinha.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnCozinha.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCozinhaActionPerformed(evt);
+            }
+        });
+        painelBotoes.add(btnCozinha);
+
         btnHistorico.setText("Histórico de vendas");
         btnHistorico.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         btnHistorico.addActionListener(new java.awt.event.ActionListener() {
@@ -338,18 +450,33 @@ public class Main extends javax.swing.JFrame {
         });
         painelBotoes.add(btnRelatorio);
 
+        btnUsuarios.setText("Usuários");
+        btnUsuarios.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnUsuarios.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUsuariosActionPerformed(evt);
+            }
+        });
+        painelBotoes.add(btnUsuarios);
+
         painelNavegacao.add(painelBotoes, java.awt.BorderLayout.CENTER);
 
         painelMenu.add(painelNavegacao, java.awt.BorderLayout.PAGE_START);
 
-        btnSair.setText("Sair");
+        painelRodape.setLayout(new java.awt.GridLayout(2, 1, 0, 6));
+        lblUsuarioLogado.setText("usuário");
+        painelRodape.add(lblUsuarioLogado);
+
+        btnSair.setText("Sair / trocar usuário");
         btnSair.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         btnSair.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSairActionPerformed(evt);
             }
         });
-        painelMenu.add(btnSair, java.awt.BorderLayout.PAGE_END);
+        painelRodape.add(btnSair);
+
+        painelMenu.add(painelRodape, java.awt.BorderLayout.PAGE_END);
 
         getContentPane().add(painelMenu, java.awt.BorderLayout.LINE_START);
 
@@ -430,28 +557,40 @@ public class Main extends javax.swing.JFrame {
     }//GEN-LAST:event_btnVisaoGeralActionPerformed
 
     private void btnVendaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVendaActionPerformed
-        abrir(new Vendas());
+        abrirSePuder(Modulo.VENDA_BALCAO, Vendas::new);
     }//GEN-LAST:event_btnVendaActionPerformed
 
     private void btnHistoricoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHistoricoActionPerformed
-        abrir(new TelaHistoricoVendas());
+        abrirSePuder(Modulo.HISTORICO, TelaHistoricoVendas::new);
     }//GEN-LAST:event_btnHistoricoActionPerformed
 
     private void btnProdutosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnProdutosActionPerformed
-        abrir(new TelaProdutos());
+        abrirSePuder(Modulo.PRODUTOS, TelaProdutos::new);
     }//GEN-LAST:event_btnProdutosActionPerformed
 
     private void btnEstoqueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEstoqueActionPerformed
-        abrir(new TelaEstoque());
+        abrirSePuder(Modulo.ESTOQUE, TelaEstoque::new);
     }//GEN-LAST:event_btnEstoqueActionPerformed
 
     private void btnRelatorioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRelatorioActionPerformed
-        abrir(new TelaRelatorio());
+        abrirSePuder(Modulo.RELATORIOS, TelaRelatorio::new);
     }//GEN-LAST:event_btnRelatorioActionPerformed
 
     private void btnSairActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSairActionPerformed
-        System.exit(0);
+        sair(this);
     }//GEN-LAST:event_btnSairActionPerformed
+
+    private void btnCaixaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCaixaActionPerformed
+        abrirSePuder(Modulo.CAIXA, TelaCaixa::new);
+    }//GEN-LAST:event_btnCaixaActionPerformed
+
+    private void btnCozinhaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCozinhaActionPerformed
+        abrirSePuder(Modulo.COZINHA, TelaCozinha::new);
+    }//GEN-LAST:event_btnCozinhaActionPerformed
+
+    private void btnUsuariosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUsuariosActionPerformed
+        abrirSePuder(Modulo.USUARIOS, TelaUsuarios::new);
+    }//GEN-LAST:event_btnUsuariosActionPerformed
 
     private void btnAtualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAtualizarActionPerformed
         carregarDados();
@@ -459,16 +598,20 @@ public class Main extends javax.swing.JFrame {
 
     public static void main(String args[]) {
         Tema.aplicar();
-        java.awt.EventQueue.invokeLater(() -> new Main().setVisible(true));
+        // Sem login a tela não tem permissões: sempre começa pelo Login.
+        java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAtualizar;
+    private javax.swing.JButton btnCaixa;
+    private javax.swing.JButton btnCozinha;
     private javax.swing.JButton btnEstoque;
     private javax.swing.JButton btnHistorico;
     private javax.swing.JButton btnProdutos;
     private javax.swing.JButton btnRelatorio;
     private javax.swing.JButton btnSair;
+    private javax.swing.JButton btnUsuarios;
     private javax.swing.JButton btnVenda;
     private javax.swing.JButton btnVisaoGeral;
     private ui.CartaoIndicador cardEstoque;
@@ -483,6 +626,7 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JLabel lblLogo;
     private javax.swing.JLabel lblSlogan;
     private javax.swing.JLabel lblTitulo;
+    private javax.swing.JLabel lblUsuarioLogado;
     private javax.swing.JPanel painelAcoes;
     private ui.PainelAlertas painelAlertas;
     private javax.swing.JPanel painelBotoes;
@@ -494,6 +638,7 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JPanel painelMarca;
     private javax.swing.JPanel painelMenu;
     private javax.swing.JPanel painelNavegacao;
+    private javax.swing.JPanel painelRodape;
     private javax.swing.JPanel painelTitulo;
     // End of variables declaration//GEN-END:variables
 }

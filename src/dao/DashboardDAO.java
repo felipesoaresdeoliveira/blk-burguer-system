@@ -22,7 +22,11 @@ import java.util.Map;
 public class DashboardDAO {
 
     /** Chave que identifica uma venda na tabela Venda (pedido ou item avulso). */
-    private static final String CHAVE_VENDA = "COALESCE('p' || pedido_id, 'v' || id)";
+    private static final String CHAVE_VENDA = "COALESCE('p' || v.pedido_id, 'v' || v.id)";
+
+    /** Itens de vendas concluídas: pedidos pagos ou vendas antigas sem pedido. */
+    private static final String VENDAS_PAGAS = "FROM \"Venda\" v LEFT JOIN \"Pedido\" pe ON pe.id = v.pedido_id "
+            + "WHERE (pe.id IS NULL OR pe.situacao = 'PAGO') ";
 
     public static class Resumo {
         public double faturamento;
@@ -51,8 +55,8 @@ public class DashboardDAO {
 
     /** Faturamento e quantidade de vendas no período [de, ate]. */
     public Resumo resumo(LocalDate de, LocalDate ate) throws SQLException {
-        String sql = "SELECT COALESCE(SUM(total), 0), COUNT(DISTINCT " + CHAVE_VENDA + ") "
-                + "FROM \"Venda\" WHERE data_venda >= ? AND data_venda < ?";
+        String sql = "SELECT COALESCE(SUM(v.total), 0), COUNT(DISTINCT " + CHAVE_VENDA + ") "
+                + VENDAS_PAGAS + "AND v.data_venda >= ? AND v.data_venda < ?";
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setTimestamp(1, inicio(de));
@@ -72,7 +76,7 @@ public class DashboardDAO {
         String sql = "SELECT d::date AS dia, COALESCE(SUM(v.total), 0) AS total, "
                 + "       COUNT(DISTINCT CASE WHEN v.id IS NOT NULL THEN COALESCE('p' || v.pedido_id, 'v' || v.id) END) AS vendas "
                 + "FROM generate_series(?::date, ?::date, interval '1 day') d "
-                + "LEFT JOIN \"Venda\" v ON v.data_venda >= d AND v.data_venda < d + interval '1 day' "
+                + "LEFT JOIN (SELECT v.* " + VENDAS_PAGAS + ") v ON v.data_venda >= d AND v.data_venda < d + interval '1 day' "
                 + "GROUP BY d ORDER BY d";
         List<Linha> dias = new ArrayList<>();
         try (Connection con = ConexaoBD.getConnection();
@@ -94,8 +98,8 @@ public class DashboardDAO {
         for (FormaPagamento f : FormaPagamento.values()) {
             formas.put(f, new Linha(f.toString(), 0, 0));
         }
-        String sql = "SELECT forma_pagamento, SUM(total), COUNT(*) FROM \"Pedido\" "
-                + "WHERE data_pedido >= ? AND data_pedido < ? GROUP BY forma_pagamento";
+        String sql = "SELECT forma, SUM(valor), COUNT(DISTINCT pedido_id) FROM \"Pagamento\" "
+                + "WHERE data >= ? AND data < ? GROUP BY forma";
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setTimestamp(1, inicio(de));
@@ -112,9 +116,9 @@ public class DashboardDAO {
 
     /** Produtos mais vendidos (por quantidade) no período. */
     public List<Linha> maisVendidos(LocalDate de, LocalDate ate, int limite) throws SQLException {
-        String sql = "SELECT produto, SUM(total), SUM(quantidade) AS qtd FROM \"Venda\" "
-                + "WHERE data_venda >= ? AND data_venda < ? "
-                + "GROUP BY produto ORDER BY qtd DESC, SUM(total) DESC LIMIT ?";
+        String sql = "SELECT v.produto, SUM(v.total), SUM(v.quantidade) AS qtd "
+                + VENDAS_PAGAS + "AND v.data_venda >= ? AND v.data_venda < ? "
+                + "GROUP BY v.produto ORDER BY qtd DESC, SUM(v.total) DESC LIMIT ?";
         List<Linha> produtos = new ArrayList<>();
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(sql)) {

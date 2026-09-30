@@ -93,4 +93,27 @@ FROM venda_exemplo ve
 JOIN "Produto" p ON p.nome = ve.produto
 JOIN pedido_exemplo pe ON pe.pedido = ve.pedido;
 
+-- Adicionais cobrados à parte (e o que consomem do estoque)
+INSERT INTO "Adicional" (nome, preco, ingrediente_nome, quantidade) VALUES
+    ('Bacon extra',          4.00, 'Bacon (fatia)', 2),
+    ('Cheddar extra',        3.00, 'Queijo cheddar (fatia)', 2),
+    ('Carne extra',          9.00, 'Blend bovino 150g', 1),
+    ('Cebola caramelizada',  3.50, 'Cebola caramelizada (porção)', 1),
+    ('Molho extra',          2.00, 'Molho da casa (porção)', 1)
+ON CONFLICT (nome) DO NOTHING;
+
+-- Mesas do salão
+INSERT INTO "Mesa" (numero, lugares)
+SELECT n, CASE WHEN n IN (5, 10) THEN 6 WHEN n > 10 THEN 2 ELSE 4 END FROM generate_series(1, 12) n
+ON CONFLICT (numero) DO NOTHING;
+
+-- Clientes de exemplo
+INSERT INTO "Cliente" (nome, telefone, endereco)
+SELECT * FROM (VALUES
+    ('Ana Souza', '(11) 98888-1111', 'Rua das Flores, 120 - Centro'),
+    ('Bruno Lima', '(11) 97777-2222', 'Av. Brasil, 845 - apto 32'),
+    ('Carla Mendes', '(11) 96666-3333', 'Rua Sete de Setembro, 77')
+) AS c(nome, telefone, endereco)
+WHERE NOT EXISTS (SELECT 1 FROM "Cliente");
+
 COMMIT;

@@ -1,28 +1,123 @@
 package telas;
 
-import entidades.Estoque;
+import entidades.Adicional;
+import entidades.Produto;
 import entidades.Venda;
+import java.util.Map;
 
 public class Vendas extends javax.swing.JFrame {
 
     private java.util.List<Venda> itensVenda = new java.util.ArrayList<>();
-    private java.util.List<Estoque> listaEstoque = new java.util.ArrayList<>();
+    private java.util.List<Produto> produtos = new java.util.ArrayList<>();
+    private Map<String, Map<String, Integer>> fichas = new java.util.HashMap<>();
+    private Map<String, Adicional> adicionais = new java.util.LinkedHashMap<>();
+    private final service.PedidoService pedidoService = new service.PedidoService();
 
+    /** Carrega o cardápio, as fichas técnicas (para "tirar ingrediente") e os adicionais. */
     private void carregarEstoque() {
-        listaEstoque.clear();
+        produtos.clear();
         DropItemEstoque1.removeAllItems();
-        try (java.sql.Connection con = config.ConexaoBD.getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Produto\"")) {
-            while (rs.next()) {
-                entidades.Estoque e = new entidades.Estoque();
-                e.setNome(rs.getString("nome"));
-                e.setPreco(rs.getDouble("preco"));
-                listaEstoque.add(e);
-                DropItemEstoque1.addItem(e.getNome() + " - R$ "
-                        + String.format("%.2f", e.getPreco()));
+        try {
+            produtos = new dao.ProdutoDAO().listar();
+            fichas = pedidoService.fichasTecnicas();
+            adicionais = pedidoService.adicionais();
+            for (Produto p : produtos) {
+                DropItemEstoque1.addItem(p.getNome() + " - R$ " + String.format("%.2f", p.getPreco()));
             }
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
         }
+    }
+
+    /**
+     * Personalização do lanche: marcar ingredientes para tirar, escolher
+     * adicionais pagos e escrever uma observação. Retorna false se cancelado.
+     */
+    private boolean personalizar(Produto produto, Venda item) {
+        javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 12));
+        javax.swing.JLabel titulo = new javax.swing.JLabel(item.getQuantidade() + "x " + produto.getNome());
+        titulo.setFont(titulo.getFont().deriveFont(java.awt.Font.BOLD, 18f));
+        titulo.setForeground(ui.Tema.DESTAQUE);
+        painel.add(titulo, java.awt.BorderLayout.NORTH);
+
+        javax.swing.JPanel colunas = new javax.swing.JPanel(new java.awt.GridLayout(1, 2, 24, 0));
+        java.util.List<javax.swing.JCheckBox> tirar = new java.util.ArrayList<>();
+        javax.swing.JPanel pTirar = new javax.swing.JPanel(new java.awt.GridLayout(0, 1, 0, 2));
+        pTirar.add(cabecalho("Tirar do lanche"));
+        Map<String, Integer> ficha = fichas.getOrDefault(produto.getNome(), java.util.Collections.emptyMap());
+        for (String ing : ficha.keySet()) {
+            javax.swing.JCheckBox c = new javax.swing.JCheckBox("Sem " + ing);
+            c.setName(ing);
+            tirar.add(c);
+            pTirar.add(c);
+        }
+        if (ficha.isEmpty()) {
+            pTirar.add(new javax.swing.JLabel("Sem ficha técnica"));
+        }
+        java.util.List<javax.swing.JCheckBox> extras = new java.util.ArrayList<>();
+        javax.swing.JPanel pExtras = new javax.swing.JPanel(new java.awt.GridLayout(0, 1, 0, 2));
+        pExtras.add(cabecalho("Adicionais"));
+        for (Adicional a : adicionais.values()) {
+            javax.swing.JCheckBox c = new javax.swing.JCheckBox(a.toString());
+            c.setName(a.getNome());
+            extras.add(c);
+            pExtras.add(c);
+        }
+        colunas.add(pTirar);
+        colunas.add(pExtras);
+        painel.add(colunas, java.awt.BorderLayout.CENTER);
+
+        javax.swing.JPanel sul = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
+        javax.swing.JTextField obs = new javax.swing.JTextField(30);
+        obs.putClientProperty("JTextField.placeholderText", "ex.: ponto da carne, cortar ao meio, para viagem");
+        sul.add(cabecalho("Observação para a cozinha"), java.awt.BorderLayout.NORTH);
+        sul.add(obs, java.awt.BorderLayout.CENTER);
+        javax.swing.JLabel preco = new javax.swing.JLabel();
+        preco.setFont(preco.getFont().deriveFont(java.awt.Font.BOLD, 15f));
+        sul.add(preco, java.awt.BorderLayout.SOUTH);
+        painel.add(sul, java.awt.BorderLayout.SOUTH);
+        Runnable atualizarPreco = () -> {
+            double unit = produto.getPreco();
+            for (javax.swing.JCheckBox c : extras) {
+                if (c.isSelected()) {
+                    unit += adicionais.get(c.getName()).getPreco();
+                }
+            }
+            preco.setText(String.format("Valor: %d x R$ %.2f = R$ %.2f", item.getQuantidade(), unit, unit * item.getQuantidade()));
+        };
+        for (javax.swing.JCheckBox c : extras) {
+            c.addActionListener(e -> atualizarPreco.run());
+        }
+        atualizarPreco.run();
+
+        Object[] opcoes = {"Adicionar", "Cancelar"};
+        int r = javax.swing.JOptionPane.showOptionDialog(this, painel, "Personalizar lanche",
+                javax.swing.JOptionPane.DEFAULT_OPTION, javax.swing.JOptionPane.PLAIN_MESSAGE, null, opcoes, opcoes[0]);
+        if (r != 0) {
+            return false;
+        }
+        for (javax.swing.JCheckBox c : tirar) {
+            if (c.isSelected()) {
+                item.getRemocoes().add(c.getName());
+            }
+        }
+        double unit = produto.getPreco();
+        for (javax.swing.JCheckBox c : extras) {
+            if (c.isSelected()) {
+                item.getAdicionais().add(c.getName());
+                unit += adicionais.get(c.getName()).getPreco();
+            }
+        }
+        item.setObservacao(obs.getText().trim());
+        item.setValor(service.VendaService.arredondar(unit));
+        return true;
+    }
+
+    private static javax.swing.JLabel cabecalho(String texto) {
+        javax.swing.JLabel l = new javax.swing.JLabel(texto);
+        l.setFont(l.getFont().deriveFont(java.awt.Font.BOLD));
+        l.setForeground(ui.Tema.TEXTO_SECUNDARIO);
+        return l;
     }
 
     private void atualizarTabela() {
@@ -38,7 +133,8 @@ public class Vendas extends javax.swing.JFrame {
             double sub = v.getValor() * v.getQuantidade();
             totalGeral += sub;
             modelo.addRow(new Object[]{
-                v.getProduto(), v.getQuantidade(),
+                v.isPersonalizado() ? v.getProduto() + "  (" + v.getResumoPersonalizacao() + ")" : v.getProduto(),
+                v.getQuantidade(),
                 String.format("R$ %.2f", v.getValor()),
                 String.format("R$ %.2f", sub)
             });
@@ -380,22 +476,25 @@ public class Vendas extends javax.swing.JFrame {
             return;
         }
 
-        entidades.Estoque est = listaEstoque.get(DropItemEstoque1.getSelectedIndex());
+        Produto produto = produtos.get(DropItemEstoque1.getSelectedIndex());
 
-        // sem verificação de estoque aqui — a baixa acontece ao finalizar
+        // Sem verificação de estoque aqui: a baixa acontece ao finalizar.
         entidades.Venda v = new entidades.Venda();
-        v.setProduto(est.getNome());
+        v.setProduto(produto.getNome());
         v.setQuantidade(qtd);
-        v.setValor(est.getPreco());
-        v.setTotal(est.getPreco() * qtd);
+        v.setValor(produto.getPreco());
+        // Lanches e acompanhamentos podem ser personalizados; bebida entra direto.
+        if (!"Bebida".equalsIgnoreCase(produto.getTipo()) && !personalizar(produto, v)) {
+            return;
+        }
+        v.setTotal(service.VendaService.arredondar(v.getValor() * qtd));
         itensVenda.add(v);
         atualizarTabela();
         SelectQnt1.setValue(1);
     }//GEN-LAST:event_BtnAdd1ActionPerformed
 
     private void voltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_voltarActionPerformed
-        new Main().setVisible(true);
-        dispose();
+        Main.voltar(this);
 
     }//GEN-LAST:event_voltarActionPerformed
 

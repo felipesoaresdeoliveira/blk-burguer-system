@@ -66,6 +66,22 @@ O Ant baixa automaticamente as dependências para a pasta `lib/` quando necessá
 
 **NetBeans:** antes de abrir o projeto pela primeira vez, rode `ant deps` para baixar os `.jar` de `lib/`, que já estão referenciados no classpath do projeto.
 
+## Perfis de acesso
+
+O primeiro usuário cadastrado direto no banco vira **Administrador**. Pelo sistema, o administrador cria as demais contas em **Usuários**:
+
+- **Administrador** (o chefe): acesso total, cria e gerencia contas.
+- **Gerente**: gerencia a operação, tudo exceto criar contas.
+- **Caixa**: balcão (vender e receber), abrir e fechar o caixa, histórico.
+- **Garçom**: mesas, comandas e pedidos.
+- **Cozinha**: abre direto o painel de produção (feito para a TV da cozinha).
+
+As senhas são guardadas com hash PBKDF2; senhas antigas em texto são convertidas no primeiro login.
+
+## Vários computadores
+
+Caixa, TV da cozinha e gerência podem rodar em computadores diferentes usando o mesmo banco. O passo a passo (liberar o PostgreSQL na rede, gerar o pacote com `ant jar` e configurar cada máquina) está em [docs/rede.md](docs/rede.md).
+
 ## Visual e dashboard
 
 - Toda a identidade visual (cores, fontes, botões) fica em `ui.Tema`. As telas não usam cores fixas; use `Tema.titulo`, `Tema.primario` e `Tema.perigo` no construtor.
