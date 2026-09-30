@@ -261,13 +261,11 @@ public class TelaRelatorio extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnSairActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSairActionPerformed
-        new Main().setVisible(true);
-        dispose();
+        Main.voltar(this);
     }//GEN-LAST:event_btnSairActionPerformed
 
     private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed
-        new Main().setVisible(true);
-        dispose();
+        Main.voltar(this);
     }//GEN-LAST:event_btnVoltarActionPerformed
 
     /**

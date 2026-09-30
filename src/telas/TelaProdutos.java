@@ -591,8 +591,7 @@ public class TelaProdutos extends javax.swing.JFrame {
     }//GEN-LAST:event_btnSalvarActionPerformed
 
     private void btnSairActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSairActionPerformed
-        new telas.Main().setVisible(true);
-        dispose();
+        Main.voltar(this);
     }//GEN-LAST:event_btnSairActionPerformed
 
     private void btnAddIngredienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddIngredienteActionPerformed

@@ -46,12 +46,19 @@
              usetimestamp="true"/>
     </target>
 
-    <target name="jar" depends="compile" description="Gera o JAR da aplicação">
+    <target name="jar" depends="compile" description="Gera dist/ pronta para copiar para outro computador">
         <jar destfile="${dist.dir}/BLK_BURGUER.jar" basedir="${classes.dir}">
             <manifest>
                 <attribute name="Main-Class" value="telas.Login"/>
+                <attribute name="Class-Path" value="lib/postgresql-${postgresql.version}.jar lib/flatlaf-${flatlaf.version}.jar"/>
             </manifest>
         </jar>
+        <copy todir="${dist.dir}/lib">
+            <fileset file="${postgresql.jar}"/>
+            <fileset file="${flatlaf.jar}"/>
+        </copy>
+        <copy file="db.properties.example" todir="${dist.dir}"/>
+        <echo file="${dist.dir}/BLK-Burguer.bat">@echo off&#13;&#10;cd /d "%~dp0"&#13;&#10;start "" javaw -jar BLK_BURGUER.jar&#13;&#10;</echo>
     </target>
 
     <target name="run" depends="compile,deps" description="Executa a aplicação">

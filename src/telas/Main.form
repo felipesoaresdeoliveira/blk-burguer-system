@@ -118,6 +118,24 @@
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnVendaActionPerformed"/>
                   </Events>
                 </Component>
+                <Component class="javax.swing.JButton" name="btnCaixa">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Caixa"/>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnCaixaActionPerformed"/>
+                  </Events>
+                </Component>
+                <Component class="javax.swing.JButton" name="btnCozinha">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Cozinha"/>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnCozinhaActionPerformed"/>
+                  </Events>
+                </Component>
                 <Component class="javax.swing.JButton" name="btnHistorico">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Histórico de vendas"/>
@@ -154,24 +172,49 @@
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnRelatorioActionPerformed"/>
                   </Events>
                 </Component>
+                <Component class="javax.swing.JButton" name="btnUsuarios">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Usuários"/>
+                    <Property name="horizontalAlignment" type="int" value="2"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnUsuariosActionPerformed"/>
+                  </Events>
+                </Component>
               </SubComponents>
             </Container>
           </SubComponents>
         </Container>
-        <Component class="javax.swing.JButton" name="btnSair">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="Sair"/>
-            <Property name="horizontalAlignment" type="int" value="2"/>
-          </Properties>
-          <Events>
-            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnSairActionPerformed"/>
-          </Events>
+        <Container class="javax.swing.JPanel" name="painelRodape">
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
               <BorderConstraints direction="South"/>
             </Constraint>
           </Constraints>
-        </Component>
+
+          <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridLayout">
+            <Property name="columns" type="int" value="1"/>
+            <Property name="horizontalGap" type="int" value="0"/>
+            <Property name="rows" type="int" value="2"/>
+            <Property name="verticalGap" type="int" value="6"/>
+          </Layout>
+          <SubComponents>
+            <Component class="javax.swing.JLabel" name="lblUsuarioLogado">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="usuário"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JButton" name="btnSair">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Sair / trocar usuário"/>
+                <Property name="horizontalAlignment" type="int" value="2"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnSairActionPerformed"/>
+              </Events>
+            </Component>
+          </SubComponents>
+        </Container>
       </SubComponents>
     </Container>
     <Container class="javax.swing.JPanel" name="painelConteudo">

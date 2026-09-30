@@ -175,6 +175,19 @@ FROM "Pedido" p
 WHERE p.forma_pagamento IS NOT NULL AND p.total > 0
   AND NOT EXISTS (SELECT 1 FROM "Pagamento" pg WHERE pg.pedido_id = p.id);
 
+-- Adicionais e remoções nos itens (#32)
+CREATE TABLE IF NOT EXISTS "Adicional" (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(60) NOT NULL UNIQUE,
+    preco DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (preco >= 0),
+    ingrediente_nome VARCHAR(100) REFERENCES "Estoque"(nome) ON UPDATE CASCADE ON DELETE SET NULL,
+    quantidade INTEGER NOT NULL DEFAULT 1 CHECK (quantidade > 0),
+    ativo BOOLEAN NOT NULL DEFAULT TRUE
+);
+-- Ingredientes retirados e adicionais escolhidos, separados por "; "
+ALTER TABLE "Venda" ADD COLUMN IF NOT EXISTS remocoes VARCHAR(255);
+ALTER TABLE "Venda" ADD COLUMN IF NOT EXISTS adicionais VARCHAR(255);
+
 -- Crie o primeiro usuário manualmente antes de abrir o sistema.
 -- Exemplo apenas para ambiente local de desenvolvimento:
 -- INSERT INTO "Login" (usuario, senha) VALUES ('admin', 'troque-esta-senha');

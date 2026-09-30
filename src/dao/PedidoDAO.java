@@ -62,6 +62,8 @@ public class PedidoDAO {
         v.setObservacao(rs.getString("observacao"));
         String st = rs.getString("status_cozinha");
         v.setStatusCozinha(st == null ? null : StatusCozinha.valueOf(st));
+        v.setRemocoes(Venda.lista(rs.getString("remocoes")));
+        v.setAdicionais(Venda.lista(rs.getString("adicionais")));
         return v;
     }
 
@@ -205,8 +207,8 @@ public class PedidoDAO {
     }
 
     public void inserirItem(Connection con, int pedidoId, Venda item) throws SQLException {
-        String sql = "INSERT INTO \"Venda\" (pedido_id, produto, quantidade, valor, total, observacao, status_cozinha, enviado_em) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO \"Venda\" (pedido_id, produto, quantidade, valor, total, observacao, status_cozinha, enviado_em, "
+                + "remocoes, adicionais) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setInt(1, pedidoId);
             pst.setString(2, item.getProduto());
@@ -216,6 +218,8 @@ public class PedidoDAO {
             pst.setString(6, ClienteDAO.vazioParaNulo(item.getObservacao()));
             pst.setString(7, item.getStatusCozinha() == null ? null : item.getStatusCozinha().name());
             pst.setTimestamp(8, item.getStatusCozinha() == null ? null : new Timestamp(System.currentTimeMillis()));
+            pst.setString(9, Venda.texto(item.getRemocoes()));
+            pst.setString(10, Venda.texto(item.getAdicionais()));
             pst.executeUpdate();
         }
     }
@@ -225,6 +229,32 @@ public class PedidoDAO {
             pst.setInt(1, itemId);
             pst.executeUpdate();
         }
+    }
+
+    /** Preço de venda atual do produto, ou -1 se não existir. */
+    public double precoProduto(Connection con, String produto) throws SQLException {
+        try (PreparedStatement pst = con.prepareStatement("SELECT preco FROM \"Produto\" WHERE nome = ?")) {
+            pst.setString(1, produto);
+            try (ResultSet rs = pst.executeQuery()) {
+                return rs.next() ? rs.getDouble(1) : -1;
+            }
+        }
+    }
+
+    /** Ficha técnica de todos os produtos: produto -> (ingrediente -> quantidade), para a cozinha. */
+    public Map<String, Map<String, Integer>> fichasTecnicas() throws SQLException {
+        Map<String, Map<String, Integer>> fichas = new java.util.HashMap<>();
+        try (Connection con = ConexaoBD.getConnection();
+                PreparedStatement pst = con.prepareStatement(
+                        "SELECT p.nome, pi.ingrediente_nome, pi.quantidade FROM \"ProdutoIngrediente\" pi "
+                        + "JOIN \"Produto\" p ON p.id = pi.produto_id ORDER BY p.nome, pi.id");
+                ResultSet rs = pst.executeQuery()) {
+            while (rs.next()) {
+                fichas.computeIfAbsent(rs.getString(1), k -> new LinkedHashMap<>())
+                        .merge(rs.getString(2), rs.getInt(3), Integer::sum);
+            }
+        }
+        return fichas;
     }
 
     /** true se o produto passa pela cozinha (bebidas vão direto para o cliente). */
@@ -294,7 +324,7 @@ public class PedidoDAO {
      */
     public List<Pedido> filaCozinha() throws SQLException {
         String sql = SELECT_PEDIDO.replace("SELECT p.*,", "SELECT p.*, v.id AS item_id, v.produto, v.quantidade, v.valor AS item_valor, "
-                + "v.total AS item_total, v.observacao AS item_obs, v.status_cozinha, v.enviado_em,")
+                + "v.total AS item_total, v.observacao AS item_obs, v.status_cozinha, v.enviado_em, v.remocoes, v.adicionais,")
                 + "JOIN \"Venda\" v ON v.pedido_id = p.id "
                 + "WHERE v.status_cozinha IN ('RECEBIDO', 'EM_PREPARO', 'PRONTO') AND p.situacao <> 'CANCELADO' "
                 + "ORDER BY v.enviado_em, v.id";
@@ -316,6 +346,8 @@ public class PedidoDAO {
                 v.setQuantidade(rs.getInt("quantidade"));
                 v.setObservacao(rs.getString("item_obs"));
                 v.setStatusCozinha(StatusCozinha.valueOf(rs.getString("status_cozinha")));
+                v.setRemocoes(Venda.lista(rs.getString("remocoes")));
+                v.setAdicionais(Venda.lista(rs.getString("adicionais")));
                 p.getItens().add(v);
             }
         }

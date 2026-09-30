@@ -1,9 +1,11 @@
 package service;
 
 import config.ConexaoBD;
+import dao.AdicionalDAO;
 import dao.CaixaDAO;
 import dao.PedidoDAO;
 import dao.VendaDAO;
+import entidades.Adicional;
 import entidades.FormaPagamento;
 import entidades.Modulo;
 import entidades.Pedido;
@@ -27,6 +29,7 @@ public class PedidoService {
     private final PedidoDAO pedidoDAO = new PedidoDAO();
     private final VendaDAO vendaDAO = new VendaDAO();
     private final CaixaDAO caixaDAO = new CaixaDAO();
+    private final AdicionalDAO adicionalDAO = new AdicionalDAO();
 
     /** Executa um bloco em transação: commit no fim ou rollback em qualquer erro. */
     private interface Transacao<T> {
@@ -123,13 +126,27 @@ public class PedidoService {
             throw new IllegalArgumentException("Adicione pelo menos um item.");
         }
         pedidoAberto(con, pedidoId);
+        Map<String, Adicional> adicionais = adicionalDAO.ativos(con);
         Map<String, Integer> consumo = new TreeMap<>();
         for (Venda item : itens) {
             if (item.getQuantidade() <= 0) {
                 throw new IllegalArgumentException("Quantidade inválida para " + item.getProduto() + ".");
             }
-            for (Map.Entry<String, Integer> ing : vendaDAO.ingredientesDoProduto(con, item.getProduto()).entrySet()) {
-                consumo.merge(ing.getKey(), ing.getValue() * item.getQuantidade(), Integer::sum);
+            double preco = pedidoDAO.precoProduto(con, item.getProduto());
+            if (preco < 0) {
+                throw new IllegalArgumentException("Produto não encontrado: " + item.getProduto());
+            }
+            // Preço sempre recalculado aqui: produto + adicionais escolhidos.
+            for (String nome : item.getAdicionais()) {
+                Adicional a = adicionais.get(nome);
+                if (a == null) {
+                    throw new IllegalArgumentException("Adicional indisponível: " + nome);
+                }
+                preco += a.getPreco();
+            }
+            item.setValor(VendaService.arredondar(preco));
+            for (Map.Entry<String, Integer> ing : consumoDoItem(con, item, adicionais).entrySet()) {
+                consumo.merge(ing.getKey(), ing.getValue(), Integer::sum);
             }
         }
         Map<String, Integer> disponivel = vendaDAO.bloquearEstoque(con, consumo.keySet());
@@ -178,9 +195,37 @@ public class PedidoService {
     }
 
     private void devolverEstoque(Connection con, Venda item) throws SQLException {
-        for (Map.Entry<String, Integer> ing : vendaDAO.ingredientesDoProduto(con, item.getProduto()).entrySet()) {
-            vendaDAO.devolverEstoque(con, ing.getKey(), ing.getValue() * item.getQuantidade());
+        for (Map.Entry<String, Integer> ing : consumoDoItem(con, item, adicionalDAO.ativos(con)).entrySet()) {
+            vendaDAO.devolverEstoque(con, ing.getKey(), ing.getValue());
         }
+    }
+
+    /**
+     * Estoque consumido por um item: ficha técnica sem os ingredientes
+     * retirados, mais os ingredientes dos adicionais, vezes a quantidade.
+     */
+    private Map<String, Integer> consumoDoItem(Connection con, Venda item, Map<String, Adicional> adicionais) throws SQLException {
+        Map<String, Integer> consumo = new TreeMap<>();
+        for (Map.Entry<String, Integer> ing : vendaDAO.ingredientesDoProduto(con, item.getProduto()).entrySet()) {
+            if (!item.getRemocoes().contains(ing.getKey())) {
+                consumo.merge(ing.getKey(), ing.getValue() * item.getQuantidade(), Integer::sum);
+            }
+        }
+        for (String nome : item.getAdicionais()) {
+            Adicional a = adicionais.get(nome);
+            if (a != null && a.getIngrediente() != null) {
+                consumo.merge(a.getIngrediente(), a.getQuantidade() * item.getQuantidade(), Integer::sum);
+            }
+        }
+        return consumo;
+    }
+
+    public Map<String, Adicional> adicionais() throws SQLException {
+        return adicionalDAO.ativos();
+    }
+
+    public Map<String, Map<String, Integer>> fichasTecnicas() throws SQLException {
+        return pedidoDAO.fichasTecnicas();
     }
 
     // ------------------------------------------------------------ mesa
