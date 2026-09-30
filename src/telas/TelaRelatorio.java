@@ -4,8 +4,25 @@ public class TelaRelatorio extends javax.swing.JFrame {
 
     public TelaRelatorio() {
         initComponents();
+        aplicarVisual();
         carregarRelatorio();
+        pack();
         setLocationRelativeTo(null);
+    }
+
+    private void aplicarVisual() {
+        ui.Tema.janela(this);
+        ui.Tema.titulo(txtTitle);
+        for (javax.swing.JPanel p : new javax.swing.JPanel[]{jPanel1, jPanel2}) {
+            p.setBackground(ui.Tema.CARTAO);
+            p.setBorder(javax.swing.BorderFactory.createLineBorder(ui.Tema.BORDA));
+        }
+        ui.Tema.secundario(jLabel1, jLabel4);
+        for (javax.swing.JLabel n : new javax.swing.JLabel[]{numTotalVendido, numVendasRealizadas}) {
+            n.setForeground(ui.Tema.TEXTO);
+            n.setFont(n.getFont().deriveFont(java.awt.Font.BOLD, 20f));
+            n.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 10));
+        }
     }
 
     public void carregarRelatorio() {
@@ -40,7 +57,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
 
             // estoque crítico
             java.sql.ResultSet rs3 = stm.executeQuery(
-                    "SELECT nome, \"Quantidade\" FROM \"Estoque\" WHERE \"Quantidade\" < 10 ORDER BY \"Quantidade\"");
+                    "SELECT nome, \"Quantidade\" FROM \"Estoque\" WHERE \"Quantidade\" < estoque_minimo ORDER BY \"Quantidade\"");
 
             javax.swing.table.DefaultTableModel modeloCritico
                     = new javax.swing.table.DefaultTableModel(

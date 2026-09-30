@@ -4,6 +4,7 @@ import entidades.Estoque;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
+import ui.Tema;
 
 public class TelaEstoque extends javax.swing.JFrame {
 
@@ -11,6 +12,10 @@ public class TelaEstoque extends javax.swing.JFrame {
 
     public TelaEstoque() {
         initComponents();
+        ui.Tema.janela(this);
+        ui.Tema.titulo(txtTitle);
+        ui.Tema.primario(btnSalvar);
+        ui.Tema.perigo(btnExcluir);
         validaCampos("inicio");
         montaTabela();
         setLocationRelativeTo(null);
@@ -24,6 +29,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         CampoNome.setText("");
         CampoCusto.setText("");
         CampoQnt.setValue(0);
+        CampoMinimo.setValue(10);
         ComboBoxTipo.setSelectedIndex(0);
         est = new Estoque();
     }
@@ -37,6 +43,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             CampoCusto.setEnabled(false);
             CampoQnt.setEnabled(false);
             ComboBoxTipo.setEnabled(false);
+            CampoMinimo.setEnabled(false);
             btnNovo.setEnabled(true);
             btnEditar.setEnabled(false);
             btnExcluir.setEnabled(false);
@@ -48,6 +55,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             CampoCusto.setEnabled(true);
             CampoQnt.setEnabled(true);
             ComboBoxTipo.setEnabled(true);
+            CampoMinimo.setEnabled(true);
             btnNovo.setEnabled(false);
             btnEditar.setEnabled(false);
             btnExcluir.setEnabled(false);
@@ -63,6 +71,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             CampoCusto.setEnabled(false);
             CampoQnt.setEnabled(false);
             ComboBoxTipo.setEnabled(false);
+            CampoMinimo.setEnabled(false);
             btnNovo.setEnabled(true);
             btnEditar.setEnabled(true);
             btnExcluir.setEnabled(true);
@@ -76,7 +85,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         try {
             javax.swing.table.DefaultTableModel modelo
                     = new javax.swing.table.DefaultTableModel(
-                            new String[]{"Nome", "Tipo", "Quantidade", "Custo unit."}, 0) {
+                            new String[]{"Nome", "Tipo", "Quantidade", "Mínimo", "Situação", "Custo unit."}, 0) {
                 public boolean isCellEditable(int r, int c) {
                     return false;
                 }
@@ -84,11 +93,23 @@ public class TelaEstoque extends javax.swing.JFrame {
             listaEstoque = estoqueDAO.listar();
             for (Estoque e : listaEstoque) {
                 modelo.addRow(new Object[]{
-                    e.getNome(), e.getTipo(), e.getQuantidade(),
+                    e.getNome(), e.getTipo(), e.getQuantidade(), e.getMinimo(),
+                    e.getQuantidade() <= 0 ? "⚠ Sem estoque" : e.isEstoqueBaixo() ? "⚠ Baixo" : "OK",
                     String.format("R$ %.2f", e.getPreco())
                 });
             }
             tabelaItens.setModel(modelo);
+            tabelaItens.getColumnModel().getColumn(4).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(javax.swing.JTable t, Object valor,
+                        boolean selecionado, boolean foco, int linha, int coluna) {
+                    super.getTableCellRendererComponent(t, valor, selecionado, foco, linha, coluna);
+                    String s = String.valueOf(valor);
+                    setForeground(s.contains("Sem") ? Tema.PERIGO : s.contains("Baixo") ? Tema.AVISO : Tema.TEXTO_FRACO);
+                    setFont(getFont().deriveFont(s.equals("OK") ? java.awt.Font.PLAIN : java.awt.Font.BOLD));
+                    return this;
+                }
+            });
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(null, e.getMessage());
         }
@@ -117,6 +138,8 @@ public class TelaEstoque extends javax.swing.JFrame {
         txtCusto = new javax.swing.JLabel();
         CampoCusto = new javax.swing.JTextField();
         CampoQnt = new javax.swing.JSpinner();
+        txtMinimo = new javax.swing.JLabel();
+        CampoMinimo = new javax.swing.JSpinner();
         txtTipo = new javax.swing.JLabel();
         ComboBoxTipo = new javax.swing.JComboBox<>();
 
@@ -215,6 +238,11 @@ public class TelaEstoque extends javax.swing.JFrame {
             }
         });
 
+        txtMinimo.setText("Mínimo:");
+        txtMinimo.setToolTipText("Abaixo desta quantidade o item aparece como estoque baixo");
+
+        CampoMinimo.setModel(new javax.swing.SpinnerNumberModel(10, 0, null, 1));
+
         txtTipo.setText("Tipo");
 
         ComboBoxTipo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Ingrediente", "Bebida", "Acompanhamento" }));
@@ -253,7 +281,11 @@ public class TelaEstoque extends javax.swing.JFrame {
                                 .addComponent(txtQnt)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(CampoQnt, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(txtMinimo)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(CampoMinimo, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(txtTipo)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(ComboBoxTipo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -284,6 +316,8 @@ public class TelaEstoque extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(txtQnt)
                     .addComponent(CampoQnt, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtMinimo)
+                    .addComponent(CampoMinimo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txtTipo)
                     .addComponent(ComboBoxTipo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
@@ -356,6 +390,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             item.setPreco(custo);
             item.setQuantidade((Integer) CampoQnt.getValue());
             item.setTipo(ComboBoxTipo.getSelectedItem().toString());
+            item.setMinimo((Integer) CampoMinimo.getValue());
 
             if (est.getNome() != null && !est.getNome().isEmpty()) {
                 estoqueDAO.atualizarCadastro(est.getNome(), item);
@@ -391,6 +426,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         CampoCusto.setText(String.valueOf(est.getPreco()));
         CampoQnt.setValue(est.getQuantidade());
         ComboBoxTipo.setSelectedItem(est.getTipo());
+        CampoMinimo.setValue(est.getMinimo());
         validaCampos("selecionado");
 
     }//GEN-LAST:event_tabelaItensMouseClicked
@@ -501,6 +537,7 @@ public class TelaEstoque extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField CampoCusto;
+    private javax.swing.JSpinner CampoMinimo;
     private javax.swing.JTextPane CampoNome;
     private javax.swing.JSpinner CampoQnt;
     private javax.swing.JComboBox<String> ComboBoxTipo;
@@ -518,6 +555,7 @@ public class TelaEstoque extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable tabelaItens;
     private javax.swing.JLabel txtCusto;
+    private javax.swing.JLabel txtMinimo;
     private javax.swing.JLabel txtQnt;
     private javax.swing.JLabel txtTipo;
     private javax.swing.JLabel txtTitle;
