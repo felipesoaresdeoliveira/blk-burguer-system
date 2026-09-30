@@ -233,63 +233,13 @@ public class Vendas extends javax.swing.JFrame {
             return;
         }
 
-        try (java.sql.Connection con = config.ConexaoBD.getConnection()) {
-            con.setAutoCommit(false);
-
-            // verifica estoque primeiro
-            for (entidades.Venda v : itensVenda) {
-                java.sql.Statement stmVerifica = con.createStatement();
-                java.sql.ResultSet rsIng = stmVerifica.executeQuery(
-                        "SELECT pi.ingrediente_nome, pi.quantidade * " + v.getQuantidade() + " as necessario, "
-                        + "e.\"Quantidade\" as disponivel "
-                        + "FROM \"ProdutoIngrediente\" pi "
-                        + "JOIN \"Estoque\" e ON e.nome = pi.ingrediente_nome "
-                        + "JOIN \"Produto\" p ON p.id = pi.produto_id "
-                        + "WHERE p.nome = '" + v.getProduto() + "'");
-                while (rsIng.next()) {
-                    if (rsIng.getInt("necessario") > rsIng.getInt("disponivel")) {
-                        javax.swing.JOptionPane.showMessageDialog(this,
-                                "Estoque insuficiente de: " + rsIng.getString("ingrediente_nome")
-                                + "\nNecessário: " + rsIng.getInt("necessario")
-                                + " | Disponível: " + rsIng.getInt("disponivel"));
-                        con.rollback();
-                        return;
-                    }
-                }
-                stmVerifica.close();
-            }
-
-            // desconta e registra
-            for (entidades.Venda v : itensVenda) {
-                java.sql.Statement stmSelect = con.createStatement();
-                java.sql.ResultSet rsIng = stmSelect.executeQuery(
-                        "SELECT pi.ingrediente_nome, pi.quantidade "
-                        + "FROM \"ProdutoIngrediente\" pi "
-                        + "JOIN \"Produto\" p ON p.id = pi.produto_id "
-                        + "WHERE p.nome = '" + v.getProduto() + "'");
-
-                java.util.List<String> nomes = new java.util.ArrayList<>();
-                java.util.List<Integer> qtds = new java.util.ArrayList<>();
-                while (rsIng.next()) {
-                    nomes.add(rsIng.getString("ingrediente_nome"));
-                    qtds.add(rsIng.getInt("quantidade") * v.getQuantidade());
-                }
-                stmSelect.close();
-
-                java.sql.Statement stmUpdate = con.createStatement();
-                for (int i = 0; i < nomes.size(); i++) {
-                    stmUpdate.execute("UPDATE \"Estoque\" SET \"Quantidade\" = \"Quantidade\" - "
-                            + qtds.get(i) + " WHERE nome = '" + nomes.get(i) + "'");
-                }
-                stmUpdate.execute("INSERT INTO \"Venda\" (produto, quantidade, valor, total) VALUES ('"
-                        + v.getProduto() + "', " + v.getQuantidade() + ", "
-                        + v.getValor() + ", " + v.getTotal() + ")");
-                stmUpdate.close();
-            }
-
-            con.commit();
+        try {
+            new service.VendaService().finalizarVenda(itensVenda);
             javax.swing.JOptionPane.showMessageDialog(this, "Venda finalizada com sucesso!");
-
+        } catch (service.EstoqueInsuficienteException e) {
+            javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
+                    "Estoque insuficiente", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
             return;
