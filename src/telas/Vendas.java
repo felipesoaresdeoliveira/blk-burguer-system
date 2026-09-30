@@ -8,16 +8,10 @@ public class Vendas extends javax.swing.JFrame {
     private java.util.List<Venda> itensVenda = new java.util.ArrayList<>();
     private java.util.List<Estoque> listaEstoque = new java.util.ArrayList<>();
 
-    private java.sql.Connection getConnection() throws Exception {
-        Class.forName("org.postgresql.Driver");
-        return java.sql.DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432/BLKburguer", "postgres", "2627");
-    }
-
     private void carregarEstoque() {
         listaEstoque.clear();
         DropItemEstoque1.removeAllItems();
-        try (java.sql.Connection con = getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Produto\"")) {
+        try (java.sql.Connection con = config.ConexaoBD.getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Produto\"")) {
             while (rs.next()) {
                 entidades.Estoque e = new entidades.Estoque();
                 e.setNome(rs.getString("nome"));
@@ -239,7 +233,7 @@ public class Vendas extends javax.swing.JFrame {
             return;
         }
 
-        try (java.sql.Connection con = getConnection()) {
+        try (java.sql.Connection con = config.ConexaoBD.getConnection()) {
             con.setAutoCommit(false);
 
             // verifica estoque primeiro

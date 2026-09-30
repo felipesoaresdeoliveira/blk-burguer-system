@@ -10,9 +10,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
 
     public void carregarRelatorio() {
         try {
-            Class.forName("org.postgresql.Driver");
-            java.sql.Connection con = java.sql.DriverManager.getConnection(
-                    "jdbc:postgresql://localhost:5432/BLKburguer", "postgres", "2627");
+            java.sql.Connection con = config.ConexaoBD.getConnection();
             java.sql.Statement stm = con.createStatement();
 
             // total de vendas

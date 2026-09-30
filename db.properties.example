@@ -1,0 +1,6 @@
+# Copie este arquivo para db.properties e ajuste para o seu PostgreSQL.
+# O db.properties não é versionado. As variáveis de ambiente
+# BLK_DB_URL, BLK_DB_USER e BLK_DB_PASSWORD têm prioridade sobre ele.
+db.url=jdbc:postgresql://localhost:5432/BLKburguer
+db.user=postgres
+db.password=

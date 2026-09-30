@@ -40,21 +40,27 @@ O schema versionado cria as tabelas utilizadas atualmente pelo sistema: `Login`,
 
 O backup binário antigo do PostgreSQL não é necessário para criar uma instalação nova do sistema.
 
-### 3. Compilar
+### 3. Configurar a conexão
+
+Copie `db.properties.example` para `db.properties` na raiz do projeto e informe URL, usuário e senha do seu PostgreSQL. O `db.properties` não é versionado.
+
+Também é possível usar as variáveis de ambiente `BLK_DB_URL`, `BLK_DB_USER` e `BLK_DB_PASSWORD`, que têm prioridade sobre o arquivo.
+
+Toda conexão do sistema passa pela classe `config.ConexaoBD`.
+
+### 4. Compilar
 
 ```bash
 ant clean compile
 ```
 
-### 4. Executar
+### 5. Executar
 
 ```bash
 ant run
 ```
 
 O comando `ant run` baixa automaticamente o driver JDBC PostgreSQL 42.7.13 para a pasta `lib/` quando necessário. O arquivo `.jar` não é versionado.
-
-> A configuração de usuário/senha da conexão com PostgreSQL ainda veio do projeto original e deve ser externalizada antes de tratar o sistema como versão final/produção.
 
 ## Estrutura de branches
 

@@ -1,10 +1,10 @@
 
 package telas;
 
+import config.ConexaoBD;
 import java.sql.Connection;
-import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
 
 public class Login extends javax.swing.JFrame {
 
@@ -98,49 +98,22 @@ public class Login extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
 
-        try {
+        String sql = "SELECT 1 FROM \"Login\" WHERE usuario = ? AND senha = ?";
 
-            Class.forName("org.postgresql.Driver");
+        try (Connection con = ConexaoBD.getConnection();
+                PreparedStatement pst = con.prepareStatement(sql)) {
 
-            Connection con = DriverManager.getConnection(
-                    "jdbc:postgresql://localhost:5432/BLKburguer",
-                    "postgres",
-                    "2627"
-            );
+            pst.setString(1, campoUsuario.getText());
+            pst.setString(2, campoSenha.getText());
 
-            Statement stm = con.createStatement();
-
-            String usuarioDigitado = campoUsuario.getText();
-            String senhaDigitada = campoSenha.getText();
-
-            String sql = "SELECT * FROM \"Login\"";
-
-            ResultSet rs = stm.executeQuery(sql);
-
-            boolean encontrou = false;
-
-            while (rs.next()) {
-
-                String usuarioBanco = rs.getString("usuario");
-                String senhaBanco = rs.getString("senha");
-
-                if (usuarioDigitado.equals(usuarioBanco)
-                        && senhaDigitada.equals(senhaBanco)) {
-
-                    encontrou = true;
-
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
                     new Main().setVisible(true);
                     dispose();
-
-                    break;
+                } else {
+                    System.out.println("Login inválido");
                 }
             }
-
-            if (!encontrou) {
-                System.out.println("Login inválido");
-            }
-
-            con.close();
 
         } catch (Exception e) {
             e.printStackTrace();
