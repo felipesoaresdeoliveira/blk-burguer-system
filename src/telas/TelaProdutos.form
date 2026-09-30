@@ -64,8 +64,12 @@
                               <Component id="txtMargem" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="txtValorMargem" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="lblMargemPercentual" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <Component id="btnAddIngrediente" alignment="0" max="32767" attributes="0"/>
+                          <Component id="btnRemoverIngrediente" alignment="0" max="32767" attributes="0"/>
+                          <Component id="lblAvisoPreco" alignment="0" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace min="-2" pref="42" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
@@ -151,7 +155,9 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="txtSubtitulo2" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jScrollPane2" min="-2" pref="186" max="-2" attributes="0"/>
+                      <Component id="jScrollPane2" min="-2" pref="150" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="btnRemoverIngrediente" min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
               <EmptySpace type="separate" max="-2" attributes="0"/>
@@ -161,8 +167,11 @@
                   <Component id="jLabel2" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="txtMargem" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="txtValorMargem" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="lblMargemPercentual" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
-              <EmptySpace pref="35" max="32767" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="lblAvisoPreco" min="-2" pref="16" max="-2" attributes="0"/>
+              <EmptySpace pref="19" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -252,7 +261,7 @@
         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
           <Font name="Segoe UI" size="14" style="1"/>
         </Property>
-        <Property name="text" type="java.lang.String" value="ingedientes do produto"/>
+        <Property name="text" type="java.lang.String" value="Ingredientes do produto"/>
       </Properties>
     </Component>
     <Container class="javax.swing.JScrollPane" name="jScrollPane2">
@@ -293,7 +302,7 @@
     </Container>
     <Component class="javax.swing.JLabel" name="txtCustoEstimado">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Custo estimado: R$"/>
+        <Property name="text" type="java.lang.String" value="Custo: R$"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="valorCEstimado">
@@ -302,19 +311,19 @@
           <Font name="Segoe UI" size="12" style="1"/>
         </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-          <Color blue="33" green="ff" red="ff" type="rgb"/>
+          <Color blue="33" green="33" red="33" type="rgb"/>
         </Property>
         <Property name="text" type="java.lang.String" value="00,00"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel2">
       <Properties>
-        <Property name="text" type="java.lang.String" value="----"/>
+        <Property name="text" type="java.lang.String" value="|"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="txtMargem">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Margem: R$"/>
+        <Property name="text" type="java.lang.String" value="Lucro: R$"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="txtValorMargem">
@@ -323,7 +332,7 @@
           <Font name="Segoe UI" size="12" style="1"/>
         </Property>
         <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-          <Color blue="66" green="ff" red="0" type="rgb"/>
+          <Color blue="33" green="99" red="0" type="rgb"/>
         </Property>
         <Property name="text" type="java.lang.String" value="00,00"/>
       </Properties>
@@ -436,6 +445,32 @@
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnAddIngredienteActionPerformed"/>
       </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnRemoverIngrediente">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Remover ingrediente selecionado"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnRemoverIngredienteActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JLabel" name="lblMargemPercentual">
+      <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="12" style="1"/>
+        </Property>
+        <Property name="text" type="java.lang.String" value="(0,0%)"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JLabel" name="lblAvisoPreco">
+      <Properties>
+        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+          <Font name="Segoe UI" size="12" style="1"/>
+        </Property>
+        <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+          <Color blue="0" green="0" red="cc" type="rgb"/>
+        </Property>
+      </Properties>
     </Component>
   </SubComponents>
 </Form>

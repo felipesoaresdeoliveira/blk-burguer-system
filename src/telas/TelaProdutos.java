@@ -1,110 +1,131 @@
 package telas;
 
 import entidades.Estoque;
+import entidades.Produto;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import javax.swing.JOptionPane;
 
 public class TelaProdutos extends javax.swing.JFrame {
 
-    private java.util.List<entidades.Estoque> listaIngredientes = new java.util.ArrayList<>();
-    private java.util.List<entidades.Estoque> ingredientesDoProduto = new java.util.ArrayList<>();
-    private java.util.List<Integer> quantidadesDoProduto = new java.util.ArrayList<>();
+    private final dao.ProdutoDAO produtoDAO = new dao.ProdutoDAO();
+    private final dao.EstoqueDAO estoqueDAO = new dao.EstoqueDAO();
+    private List<Estoque> listaIngredientes = new ArrayList<>();
+    private List<Produto> listaProdutos = new ArrayList<>();
+    /** Ficha técnica em edição: ingrediente -> quantidade por unidade do produto. */
+    private final Map<String, Integer> composicao = new LinkedHashMap<>();
     private int produtoSelecionadoId = -1;
 
     public void limparCampos() {
         campoNome.setText("");
         campoPvenda.setText("");
         ComboboxTipo.setSelectedIndex(0);
-        ingredientesDoProduto.clear();
-        quantidadesDoProduto.clear();
+        composicao.clear();
         produtoSelecionadoId = -1;
         atualizarTabelaIngredientes();
     }
 
     public void validaCampos(String op) {
-        if (op.equals("inicio")) {
-            campoNome.setEnabled(false);
-            campoPvenda.setEnabled(false);
-            ComboboxTipo.setEnabled(false);
-            cBoxAddIngrediente.setEnabled(false);
-            jTextField1.setEnabled(false);
-            btnNovo.setEnabled(true);
-            btnEditar.setEnabled(false);
-            btnExcluir.setEnabled(false);
-            btnSalvar.setEnabled(false);
-            btnCancelar.setEnabled(false);
-            btnSair.setEnabled(true);
-        } else if (op.equals("novo")) {
-            campoNome.setEnabled(true);
-            campoPvenda.setEnabled(true);
-            ComboboxTipo.setEnabled(true);
-            cBoxAddIngrediente.setEnabled(true);
-            jTextField1.setEnabled(true);
-            btnNovo.setEnabled(false);
-            btnEditar.setEnabled(false);
-            btnExcluir.setEnabled(false);
-            btnSalvar.setEnabled(true);
-            btnCancelar.setEnabled(true);
-            btnSair.setEnabled(false);
-        } else if (op.equals("selecionado")) {
-            campoNome.setEnabled(false);
-            campoPvenda.setEnabled(false);
-            ComboboxTipo.setEnabled(false);
-            cBoxAddIngrediente.setEnabled(false);
-            jTextField1.setEnabled(false);
-            btnNovo.setEnabled(true);
-            btnEditar.setEnabled(true);
-            btnExcluir.setEnabled(true);
-            btnSalvar.setEnabled(false);
-            btnCancelar.setEnabled(true);
-            btnSair.setEnabled(false);
-        }
+        boolean editando = op.equals("novo");
+        campoNome.setEnabled(editando);
+        campoPvenda.setEnabled(editando);
+        ComboboxTipo.setEnabled(editando);
+        cBoxAddIngrediente.setEnabled(editando);
+        jTextField1.setEnabled(editando);
+        btnAddIngrediente.setEnabled(editando);
+        btnRemoverIngrediente.setEnabled(editando);
+        btnSalvar.setEnabled(editando);
+        btnNovo.setEnabled(!editando);
+        btnEditar.setEnabled(op.equals("selecionado"));
+        btnExcluir.setEnabled(op.equals("selecionado"));
+        btnCancelar.setEnabled(!op.equals("inicio"));
+        btnSair.setEnabled(op.equals("inicio"));
     }
 
     public void carregarIngredientes() {
-        listaIngredientes.clear();
         cBoxAddIngrediente.removeAllItems();
-        try (java.sql.Connection con = config.ConexaoBD.getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Estoque\"")) {
-            while (rs.next()) {
-                entidades.Estoque e = new entidades.Estoque();
-                e.setNome(rs.getString("nome"));
-                e.setPreco(rs.getDouble("valor"));
-                e.setQuantidade(rs.getInt("Quantidade"));
-                listaIngredientes.add(e);
+        try {
+            listaIngredientes = estoqueDAO.listar();
+            for (Estoque e : listaIngredientes) {
                 cBoxAddIngrediente.addItem(e.getNome());
             }
         } catch (Exception e) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
+        }
+    }
+
+    private double custoUnitario(String ingrediente) {
+        for (Estoque e : listaIngredientes) {
+            if (e.getNome().equals(ingrediente)) {
+                return e.getPreco();
+            }
+        }
+        return 0;
+    }
+
+    private double custoDoProduto() {
+        double custo = 0;
+        for (Map.Entry<String, Integer> ing : composicao.entrySet()) {
+            custo += custoUnitario(ing.getKey()) * ing.getValue();
+        }
+        return custo;
+    }
+
+    /** Preço digitado, aceitando vírgula ou ponto; null se inválido. */
+    private Double precoDigitado() {
+        try {
+            return Double.valueOf(campoPvenda.getText().trim().replace(',', '.'));
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 
     public void atualizarTabelaIngredientes() {
         javax.swing.table.DefaultTableModel modelo
                 = new javax.swing.table.DefaultTableModel(
-                        new String[]{"Ingrediente", "Qnt"}, 0) {
+                        new String[]{"Ingrediente", "Qnt", "Custo unit.", "Subtotal"}, 0) {
             public boolean isCellEditable(int r, int c) {
                 return false;
             }
         };
-        double custo = 0;
-        for (int i = 0; i < ingredientesDoProduto.size(); i++) {
-            entidades.Estoque e = ingredientesDoProduto.get(i);
-            int qtd = quantidadesDoProduto.get(i);
-            custo += e.getPreco() * qtd;
-            modelo.addRow(new Object[]{e.getNome(), qtd});
+        for (Map.Entry<String, Integer> ing : composicao.entrySet()) {
+            double unit = custoUnitario(ing.getKey());
+            modelo.addRow(new Object[]{
+                ing.getKey(), ing.getValue(),
+                String.format("R$ %.2f", unit),
+                String.format("R$ %.2f", unit * ing.getValue())
+            });
         }
         tabelaIngredientesProd.setModel(modelo);
+        atualizarResumo();
+    }
+
+    /** Atualiza custo, lucro por unidade, margem % e o aviso de preço abaixo do custo. */
+    private void atualizarResumo() {
+        double custo = custoDoProduto();
         valorCEstimado.setText(String.format("%.2f", custo));
-        try {
-            double pvenda = Double.parseDouble(campoPvenda.getText().trim());
-            txtValorMargem.setText(String.format("%.2f", pvenda - custo));
-        } catch (Exception ex) {
-            txtValorMargem.setText("0,00");
+        Double preco = precoDigitado();
+        if (preco == null || preco <= 0) {
+            txtValorMargem.setText("-");
+            lblMargemPercentual.setText("");
+            lblAvisoPreco.setText(" ");
+            return;
         }
+        double lucro = preco - custo;
+        java.awt.Color cor = lucro < 0 ? new java.awt.Color(204, 0, 0) : new java.awt.Color(0, 153, 51);
+        txtValorMargem.setForeground(cor);
+        lblMargemPercentual.setForeground(cor);
+        txtValorMargem.setText(String.format("%.2f", lucro));
+        lblMargemPercentual.setText(String.format("(%.1f%%)", lucro / preco * 100));
+        lblAvisoPreco.setText(preco < custo
+                ? "Atenção: preço de venda abaixo do custo!"
+                : " ");
     }
 
     public void montaTabelaProdutos() {
-        try (java.sql.Connection con = config.ConexaoBD.getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery(
-                "SELECT id, nome, tipo, preco FROM public.\"Produto\"")) {
-
+        try {
             javax.swing.table.DefaultTableModel modelo
                     = new javax.swing.table.DefaultTableModel(
                             new String[]{"Produto", "Tipo", "Preço"}, 0) {
@@ -112,41 +133,15 @@ public class TelaProdutos extends javax.swing.JFrame {
                     return false;
                 }
             };
-            while (rs.next()) {
+            listaProdutos = produtoDAO.listar();
+            for (Produto p : listaProdutos) {
                 modelo.addRow(new Object[]{
-                    rs.getString("nome"),
-                    rs.getString("tipo"),
-                    String.format("R$ %.2f", rs.getDouble("preco"))
+                    p.getNome(), p.getTipo(), String.format("R$ %.2f", p.getPreco())
                 });
             }
             tabelaProdutos.setModel(modelo);
-            tabelaProdutos.repaint();
-
         } catch (Exception e) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
-        }
-    }
-
-    public void montaTabelaIngredientes() {
-        try (java.sql.Connection con = config.ConexaoBD.getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Estoque\"")) {
-
-            javax.swing.table.DefaultTableModel modelo
-                    = new javax.swing.table.DefaultTableModel(
-                            new String[]{"Ingrediente", "Qnt"}, 0) {
-                public boolean isCellEditable(int r, int c) {
-                    return false;
-                }
-            };
-            while (rs.next()) {
-                modelo.addRow(new Object[]{
-                    rs.getString("nome"),
-                    rs.getInt("Quantidade")
-                });
-            }
-            tabelaIngredientesProd.setModel(modelo);
-
-        } catch (Exception e) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
         }
     }
 
@@ -155,7 +150,20 @@ public class TelaProdutos extends javax.swing.JFrame {
         setLocationRelativeTo(null);
         carregarIngredientes();
         montaTabelaProdutos();
-        montaTabelaIngredientes();
+        atualizarTabelaIngredientes();
+        campoPvenda.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                atualizarResumo();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                atualizarResumo();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                atualizarResumo();
+            }
+        });
         validaCampos("inicio");
     }
 
@@ -193,6 +201,9 @@ public class TelaProdutos extends javax.swing.JFrame {
         btnSalvar = new javax.swing.JButton();
         btnSair = new javax.swing.JButton();
         btnAddIngrediente = new javax.swing.JButton();
+        btnRemoverIngrediente = new javax.swing.JButton();
+        lblMargemPercentual = new javax.swing.JLabel();
+        lblAvisoPreco = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -218,7 +229,7 @@ public class TelaProdutos extends javax.swing.JFrame {
         txtQnt.setText("Qnt: ");
 
         txtSubtitulo2.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        txtSubtitulo2.setText("ingedientes do produto");
+        txtSubtitulo2.setText("Ingredientes do produto");
 
         tabelaIngredientesProd.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -233,18 +244,18 @@ public class TelaProdutos extends javax.swing.JFrame {
         ));
         jScrollPane2.setViewportView(tabelaIngredientesProd);
 
-        txtCustoEstimado.setText("Custo estimado: R$");
+        txtCustoEstimado.setText("Custo: R$");
 
         valorCEstimado.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        valorCEstimado.setForeground(new java.awt.Color(255, 255, 51));
+        valorCEstimado.setForeground(new java.awt.Color(51, 51, 51));
         valorCEstimado.setText("00,00");
 
-        jLabel2.setText("----");
+        jLabel2.setText("|");
 
-        txtMargem.setText("Margem: R$");
+        txtMargem.setText("Lucro: R$");
 
         txtValorMargem.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        txtValorMargem.setForeground(new java.awt.Color(0, 255, 102));
+        txtValorMargem.setForeground(new java.awt.Color(0, 153, 51));
         txtValorMargem.setText("00,00");
 
         jLabel3.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -331,6 +342,19 @@ public class TelaProdutos extends javax.swing.JFrame {
             }
         });
 
+        btnRemoverIngrediente.setText("Remover ingrediente selecionado");
+        btnRemoverIngrediente.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRemoverIngredienteActionPerformed(evt);
+            }
+        });
+
+        lblMargemPercentual.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblMargemPercentual.setText("(0,0%)");
+
+        lblAvisoPreco.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblAvisoPreco.setForeground(new java.awt.Color(204, 0, 0));
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -371,8 +395,12 @@ public class TelaProdutos extends javax.swing.JFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(txtMargem)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(txtValorMargem))
-                            .addComponent(btnAddIngrediente, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addComponent(txtValorMargem)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(lblMargemPercentual))
+                            .addComponent(btnAddIngrediente, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(btnRemoverIngrediente, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(lblAvisoPreco, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(42, 42, 42)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel3)
@@ -441,15 +469,20 @@ public class TelaProdutos extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(txtSubtitulo2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 186, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnRemoverIngrediente)))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(txtCustoEstimado)
                     .addComponent(valorCEstimado)
                     .addComponent(jLabel2)
                     .addComponent(txtMargem)
-                    .addComponent(txtValorMargem))
-                .addContainerGap(35, Short.MAX_VALUE))
+                    .addComponent(txtValorMargem)
+                    .addComponent(lblMargemPercentual))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(lblAvisoPreco, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(19, Short.MAX_VALUE))
         );
 
         pack();
@@ -462,31 +495,25 @@ public class TelaProdutos extends javax.swing.JFrame {
 
     private void btnEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditarActionPerformed
         validaCampos("novo");
-
     }//GEN-LAST:event_btnEditarActionPerformed
 
     private void btnExcluirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcluirActionPerformed
         if (produtoSelecionadoId < 0) {
             return;
         }
-        int confirm = javax.swing.JOptionPane.showConfirmDialog(null,
-                "Excluir este produto?", "Confirmar", javax.swing.JOptionPane.YES_NO_OPTION);
-        if (confirm != javax.swing.JOptionPane.YES_OPTION) {
+        int confirm = JOptionPane.showConfirmDialog(null,
+                "Excluir este produto?", "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) {
             return;
         }
-        try (java.sql.Connection con = config.ConexaoBD.getConnection()) {
-            java.sql.Statement stm = con.createStatement();
-            stm.execute("DELETE FROM \"ProdutoIngrediente\" WHERE produto_id = " + produtoSelecionadoId);
-            stm.execute("DELETE FROM \"Produto\" WHERE id = " + produtoSelecionadoId);
-            javax.swing.JOptionPane.showMessageDialog(null, "Produto excluído!");
+        try {
+            produtoDAO.excluir(produtoSelecionadoId);
+            JOptionPane.showMessageDialog(null, "Produto excluído!");
             limparCampos();
             montaTabelaProdutos();
-            montaTabelaIngredientes();
-            limparCampos();
-            validaCampos("inicio");
             validaCampos("inicio");
         } catch (Exception e) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
         }
     }//GEN-LAST:event_btnExcluirActionPerformed
 
@@ -497,55 +524,36 @@ public class TelaProdutos extends javax.swing.JFrame {
 
     private void btnSalvarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSalvarActionPerformed
         if (campoNome.getText().trim().isEmpty()) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Informe o nome do produto.");
+            JOptionPane.showMessageDialog(null, "Informe o nome do produto.");
             return;
         }
-        try (java.sql.Connection con = config.ConexaoBD.getConnection()) {
-            con.setAutoCommit(false);
-            java.sql.Statement stm = con.createStatement();
-            String nome = campoNome.getText().trim();
-            String tipo = ComboboxTipo.getSelectedItem().toString();
-            double preco = Double.parseDouble(campoPvenda.getText().trim());
-
-            if (produtoSelecionadoId > 0) {
-                // EDITAR
-                stm.execute("UPDATE \"Produto\" SET nome = '" + nome
-                        + "', tipo = '" + tipo + "', preco = " + preco
-                        + " WHERE id = " + produtoSelecionadoId);
-                stm.execute("DELETE FROM \"ProdutoIngrediente\" WHERE produto_id = "
-                        + produtoSelecionadoId);
-                for (int i = 0; i < ingredientesDoProduto.size(); i++) {
-                    stm.execute("INSERT INTO \"ProdutoIngrediente\" (produto_id, ingrediente_nome, quantidade) VALUES ("
-                            + produtoSelecionadoId + ", '"
-                            + ingredientesDoProduto.get(i).getNome() + "', "
-                            + quantidadesDoProduto.get(i) + ")");
-                }
-            } else {
-                // NOVO
-                stm.execute("INSERT INTO \"Produto\" (nome, tipo, preco) VALUES ('"
-                        + nome + "', '" + tipo + "', " + preco + ")");
-                java.sql.ResultSet rs = stm.executeQuery(
-                        "SELECT id FROM \"Produto\" WHERE nome = '" + nome + "' ORDER BY id DESC LIMIT 1");
-                if (rs.next()) {
-                    int prodId = rs.getInt("id");
-                    for (int i = 0; i < ingredientesDoProduto.size(); i++) {
-                        stm.execute("INSERT INTO \"ProdutoIngrediente\" (produto_id, ingrediente_nome, quantidade) VALUES ("
-                                + prodId + ", '"
-                                + ingredientesDoProduto.get(i).getNome() + "', "
-                                + quantidadesDoProduto.get(i) + ")");
-                    }
-                }
+        Double preco = precoDigitado();
+        if (preco == null || preco < 0) {
+            JOptionPane.showMessageDialog(null, "Informe um preço de venda válido. Ex.: 25,90");
+            return;
+        }
+        double custo = custoDoProduto();
+        if (preco < custo) {
+            int confirm = JOptionPane.showConfirmDialog(null,
+                    String.format("O preço de venda (R$ %.2f) está abaixo do custo (R$ %.2f).%nSalvar mesmo assim?", preco, custo),
+                    "Preço abaixo do custo", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
             }
-            con.commit();
-            javax.swing.JOptionPane.showMessageDialog(null, "Salvo com sucesso!");
+        }
+        try {
+            Produto produto = new Produto();
+            produto.setId(produtoSelecionadoId);
+            produto.setNome(campoNome.getText().trim());
+            produto.setTipo(ComboboxTipo.getSelectedItem().toString());
+            produto.setPreco(preco);
+            produtoDAO.salvar(produto, composicao);
+            JOptionPane.showMessageDialog(null, "Salvo com sucesso!");
             limparCampos();
             montaTabelaProdutos();
-            montaTabelaIngredientes();
-            limparCampos();
-            validaCampos("inicio");
             validaCampos("inicio");
         } catch (Exception e) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
         }
     }//GEN-LAST:event_btnSalvarActionPerformed
 
@@ -563,15 +571,25 @@ public class TelaProdutos extends javax.swing.JFrame {
             if (qtd <= 0) {
                 throw new NumberFormatException();
             }
-            entidades.Estoque selecionado = listaIngredientes.get(cBoxAddIngrediente.getSelectedIndex());
-            ingredientesDoProduto.add(selecionado);
-            quantidadesDoProduto.add(qtd);
+            String nome = listaIngredientes.get(cBoxAddIngrediente.getSelectedIndex()).getNome();
+            // Ingrediente repetido soma na quantidade existente.
+            composicao.merge(nome, qtd, Integer::sum);
             atualizarTabelaIngredientes();
             jTextField1.setText("");
         } catch (NumberFormatException ex) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Informe uma quantidade válida.");
+            JOptionPane.showMessageDialog(null, "Informe uma quantidade válida.");
         }
     }//GEN-LAST:event_btnAddIngredienteActionPerformed
+
+    private void btnRemoverIngredienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRemoverIngredienteActionPerformed
+        int linha = tabelaIngredientesProd.getSelectedRow();
+        if (linha < 0) {
+            JOptionPane.showMessageDialog(null, "Selecione um ingrediente na tabela para remover.");
+            return;
+        }
+        composicao.remove(tabelaIngredientesProd.getValueAt(linha, 0).toString());
+        atualizarTabelaIngredientes();
+    }//GEN-LAST:event_btnRemoverIngredienteActionPerformed
 
     private void tabelaProdutosMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tabelaProdutosMouseClicked
         int linha = tabelaProdutos.getSelectedRow();
@@ -579,47 +597,17 @@ public class TelaProdutos extends javax.swing.JFrame {
             return;
         }
         try {
-            java.sql.Connection con = config.ConexaoBD.getConnection();
-            java.sql.Statement stm = con.createStatement();
-
-            String nomeProd = tabelaProdutos.getValueAt(linha, 0).toString();
-
-            java.sql.ResultSet rs = stm.executeQuery(
-                    "SELECT * FROM \"Produto\" WHERE nome = '" + nomeProd + "'");
-            if (rs.next()) {
-                produtoSelecionadoId = rs.getInt("id");
-                campoNome.setText(rs.getString("nome"));
-                campoPvenda.setText(String.valueOf(rs.getDouble("preco")));
-                ComboboxTipo.setSelectedItem(rs.getString("tipo"));
-            }
-            stm.close();
-
-            ingredientesDoProduto.clear();
-            quantidadesDoProduto.clear();
-
-            java.sql.Statement stm2 = con.createStatement();
-            java.sql.ResultSet rs2 = stm2.executeQuery(
-                    "SELECT * FROM \"ProdutoIngrediente\" WHERE produto_id = "
-                    + produtoSelecionadoId);
-            while (rs2.next()) {
-                String nomeIng = rs2.getString("ingrediente_nome");
-                int qtd = rs2.getInt("quantidade");
-                entidades.Estoque e = listaIngredientes.stream()
-                        .filter(x -> x.getNome().equals(nomeIng))
-                        .findFirst().orElse(null);
-                if (e != null) {
-                    ingredientesDoProduto.add(e);
-                    quantidadesDoProduto.add(qtd);
-                }
-            }
-            stm2.close();
-            con.close();
-
+            Produto p = listaProdutos.get(linha);
+            produtoSelecionadoId = p.getId();
+            campoNome.setText(p.getNome());
+            campoPvenda.setText(String.format("%.2f", p.getPreco()));
+            ComboboxTipo.setSelectedItem(p.getTipo());
+            composicao.clear();
+            composicao.putAll(produtoDAO.ingredientes(p.getId()));
             atualizarTabelaIngredientes();
             validaCampos("selecionado");
-
         } catch (Exception e) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
         }
     }//GEN-LAST:event_tabelaProdutosMouseClicked
 
@@ -639,6 +627,7 @@ public class TelaProdutos extends javax.swing.JFrame {
     private javax.swing.JButton btnEditar;
     private javax.swing.JButton btnExcluir;
     private javax.swing.JButton btnNovo;
+    private javax.swing.JButton btnRemoverIngrediente;
     private javax.swing.JButton btnSair;
     private javax.swing.JButton btnSalvar;
     private javax.swing.JComboBox<String> cBoxAddIngrediente;
@@ -650,6 +639,8 @@ public class TelaProdutos extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTextField jTextField1;
+    private javax.swing.JLabel lblAvisoPreco;
+    private javax.swing.JLabel lblMargemPercentual;
     private javax.swing.JTable tabelaIngredientesProd;
     private javax.swing.JTable tabelaProdutos;
     private javax.swing.JLabel txtCustoEstimado;
