@@ -61,12 +61,26 @@ public class Vendas extends javax.swing.JFrame {
      * com o troco calculado na hora. Retorna {forma, valorRecebido} ou null se
      * o usuário cancelar.
      */
+    private static int clienteSelecionado(javax.swing.JComboBox<Object> combo) {
+        Object c = combo.getSelectedItem();
+        return c instanceof entidades.Cliente ? ((entidades.Cliente) c).getId() : 0;
+    }
+
     private Object[] escolherPagamento(double total) {
         javax.swing.JComboBox<entidades.FormaPagamento> campoForma
                 = new javax.swing.JComboBox<>(entidades.FormaPagamento.values());
         javax.swing.JTextField campoRecebido = new javax.swing.JTextField(10);
         javax.swing.JLabel lblTroco = new javax.swing.JLabel();
         lblTroco.setFont(lblTroco.getFont().deriveFont(java.awt.Font.BOLD, 14f));
+        javax.swing.JComboBox<Object> campoCliente = new javax.swing.JComboBox<>();
+        campoCliente.addItem("Sem cliente");
+        try {
+            for (entidades.Cliente c : new dao.ClienteDAO().listar("")) {
+                campoCliente.addItem(c);
+            }
+        } catch (Exception e) {
+            // Sem clientes carregados: a venda segue sem cliente.
+        }
 
         Runnable atualizar = () -> {
             boolean dinheiro = campoForma.getSelectedItem() == entidades.FormaPagamento.DINHEIRO;
@@ -111,6 +125,8 @@ public class Vendas extends javax.swing.JFrame {
         painel.add(new javax.swing.JLabel("Valor recebido (dinheiro):"));
         painel.add(campoRecebido);
         painel.add(lblTroco);
+        painel.add(new javax.swing.JLabel("Cliente (opcional):"));
+        painel.add(campoCliente);
 
         while (true) {
             int opcao = javax.swing.JOptionPane.showConfirmDialog(this, painel, "Finalizar venda",
@@ -120,11 +136,11 @@ public class Vendas extends javax.swing.JFrame {
             }
             entidades.FormaPagamento forma = (entidades.FormaPagamento) campoForma.getSelectedItem();
             if (forma != entidades.FormaPagamento.DINHEIRO) {
-                return new Object[]{forma, total};
+                return new Object[]{forma, total, clienteSelecionado(campoCliente)};
             }
             Double recebido = lerValor(campoRecebido.getText());
             if (recebido != null && service.VendaService.troco(total, recebido) >= 0) {
-                return new Object[]{forma, recebido};
+                return new Object[]{forma, recebido, clienteSelecionado(campoCliente)};
             }
             javax.swing.JOptionPane.showMessageDialog(this,
                     "Informe um valor recebido igual ou maior que o total.",
@@ -325,8 +341,12 @@ public class Vendas extends javax.swing.JFrame {
         double recebido = (Double) pagamento[1];
 
         try {
-            int pedido = new service.VendaService().finalizarVenda(itensVenda, forma, recebido);
-            String msg = String.format("Venda nº %d finalizada com sucesso!%nPagamento: %s", pedido, forma);
+            entidades.Pedido pedido = new service.VendaService().finalizarVenda(itensVenda, forma, recebido, (Integer) pagamento[2]);
+            String msg = String.format("Venda nº %d finalizada!%nSenha do cliente: %d%nPagamento: %s",
+                    pedido.getId(), pedido.getSenha(), forma);
+            if (pedido.getItens().stream().anyMatch(v -> v.getStatusCozinha() != null)) {
+                msg += String.format("%nOs lanches foram enviados para a cozinha.");
+            }
             if (forma == entidades.FormaPagamento.DINHEIRO) {
                 msg += String.format("%nTroco: R$ %.2f", service.VendaService.troco(total, recebido));
             }
@@ -335,7 +355,7 @@ public class Vendas extends javax.swing.JFrame {
             javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
                     "Estoque insuficiente", javax.swing.JOptionPane.WARNING_MESSAGE);
             return;
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
                     "Atenção", javax.swing.JOptionPane.WARNING_MESSAGE);
             return;

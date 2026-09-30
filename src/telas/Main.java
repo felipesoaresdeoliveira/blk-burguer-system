@@ -215,6 +215,14 @@ public class Main extends javax.swing.JFrame {
         painelAlertas.setDados(nomes, qtd, min);
     }
 
+    /**
+     * Abre a tela inicial do usuário logado. O painel da cozinha (tela cheia
+     * para a TV) ainda será criado; por enquanto todos os perfis entram aqui.
+     */
+    public static void abrirInicio() {
+        new Main().setVisible(true);
+    }
+
     private void abrir(javax.swing.JFrame tela) {
         tela.setVisible(true);
         dispose();
