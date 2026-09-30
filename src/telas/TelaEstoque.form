@@ -35,6 +35,10 @@
               <EmptySpace max="-2" attributes="0"/>
               <Component id="btnExcluir" min="-2" pref="91" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
+              <Component id="btnEntrada" min="-2" pref="90" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
+              <Component id="btnAjustar" min="-2" pref="90" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
               <Component id="btnSalvar" min="-2" pref="90" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Component id="btnCancelar" min="-2" pref="90" max="-2" attributes="0"/>
@@ -54,7 +58,7 @@
                           <Group type="102" alignment="0" attributes="0">
                               <Component id="txtQnt" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="CampoQnt" min="-2" max="-2" attributes="0"/>
+                              <Component id="CampoQnt" min="-2" pref="80" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="txtTipo" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
@@ -106,6 +110,8 @@
                   <Component id="btnSalvar" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
                   <Component id="btnCancelar" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
                   <Component id="btnSair" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
+                  <Component id="btnEntrada" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
+                  <Component id="btnAjustar" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
                   <Component id="btnNovo" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
                   <Component id="btnEditar" alignment="3" min="-2" pref="39" max="-2" attributes="0"/>
               </Group>
@@ -235,6 +241,24 @@
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnSairActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnEntrada">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Entrada"/>
+        <Property name="toolTipText" type="java.lang.String" value="Registrar entrada de quantidade no item selecionado"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnEntradaActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="btnAjustar">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Ajustar"/>
+        <Property name="toolTipText" type="java.lang.String" value="Ajustar a quantidade do item selecionado informando o motivo"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnAjustarActionPerformed"/>
       </Events>
     </Component>
     <Component class="javax.swing.JLabel" name="txtCusto">
