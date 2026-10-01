@@ -12,13 +12,41 @@ public class TelaEstoque extends javax.swing.JFrame {
 
     public TelaEstoque() {
         initComponents();
-        ui.Tema.janela(this);
-        ui.Tema.titulo(txtTitle);
-        ui.Tema.primario(btnSalvar);
-        ui.Tema.perigo(btnExcluir);
+        aplicarVisual();
         validaCampos("inicio");
         montaTabela();
-        setLocationRelativeTo(null);
+        Tema.tamanhoPadrao(this);
+    }
+
+    private void aplicarVisual() {
+        Tema.janela(this);
+        Tema.titulo(txtTitle);
+        Tema.secundario(lblSubtitulo);
+        Tema.primario(btnSalvar);
+        Tema.perigo(btnExcluir);
+        Tema.cartao(painelFormulario);
+        Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelLista, painelBusca,
+                painelCampos, painelBotoes, chkSomenteBaixo);
+        lblFormTitulo.setForeground(Tema.TEXTO);
+        txtBusca.putClientProperty("JTextField.placeholderText", "nome do item");
+        txtBusca.putClientProperty("JTextField.showClearButton", true);
+        // Busca e filtros aplicados enquanto o usuário digita/escolhe (#22).
+        txtBusca.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { montaTabela(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { montaTabela(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { montaTabela(); }
+        });
+        cmbFiltroTipo.addActionListener(e -> montaTabela());
+        chkSomenteBaixo.addActionListener(e -> montaTabela());
+    }
+
+    /** true se o item passa pela busca e pelos filtros da tela. */
+    private boolean passaNoFiltro(Estoque e) {
+        String busca = txtBusca.getText().trim().toLowerCase();
+        String tipo = String.valueOf(cmbFiltroTipo.getSelectedItem());
+        return (busca.isEmpty() || e.getNome().toLowerCase().contains(busca))
+                && ("Todos".equals(tipo) || tipo.equals(e.getTipo()))
+                && (!chkSomenteBaixo.isSelected() || e.isEstoqueBaixo());
     }
     Estoque est = new Estoque();
     List<Estoque> listaEstoque = new ArrayList<>();
@@ -90,7 +118,12 @@ public class TelaEstoque extends javax.swing.JFrame {
                     return false;
                 }
             };
-            listaEstoque = estoqueDAO.listar();
+            listaEstoque = new ArrayList<>();
+            for (Estoque e : estoqueDAO.listar()) {
+                if (passaNoFiltro(e)) {
+                    listaEstoque.add(e);
+                }
+            }
             for (Estoque e : listaEstoque) {
                 modelo.addRow(new Object[]{
                     e.getNome(), e.getTipo(), e.getQuantidade(), e.getMinimo(),
@@ -119,65 +152,163 @@ public class TelaEstoque extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        buttonGroup1 = new javax.swing.ButtonGroup();
+        painelCabecalho = new javax.swing.JPanel();
+        painelTitulo = new javax.swing.JPanel();
+        txtTitle = new javax.swing.JLabel();
+        lblSubtitulo = new javax.swing.JLabel();
+        painelAcoesTopo = new javax.swing.JPanel();
+        btnSair = new javax.swing.JButton();
+        painelCorpo = new javax.swing.JPanel();
+        painelLista = new javax.swing.JPanel();
+        painelBusca = new javax.swing.JPanel();
+        lblBusca = new javax.swing.JLabel();
+        txtBusca = new javax.swing.JTextField();
+        lblFiltroTipo = new javax.swing.JLabel();
+        cmbFiltroTipo = new javax.swing.JComboBox<>();
+        chkSomenteBaixo = new javax.swing.JCheckBox();
+        btnLimparFiltro = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         tabelaItens = new javax.swing.JTable();
-        txtTitle = new javax.swing.JLabel();
+        painelFormulario = new javax.swing.JPanel();
+        painelCampos = new javax.swing.JPanel();
+        lblFormTitulo = new javax.swing.JLabel();
         TxtNome = new javax.swing.JLabel();
-        txtQnt = new javax.swing.JLabel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        CampoNome = new javax.swing.JTextPane();
-        btnNovo = new javax.swing.JButton();
-        btnEditar = new javax.swing.JButton();
-        btnExcluir = new javax.swing.JButton();
-        btnCancelar = new javax.swing.JButton();
-        btnSalvar = new javax.swing.JButton();
-        btnSair = new javax.swing.JButton();
-        btnEntrada = new javax.swing.JButton();
-        btnAjustar = new javax.swing.JButton();
+        CampoNome = new javax.swing.JTextField();
         txtCusto = new javax.swing.JLabel();
         CampoCusto = new javax.swing.JTextField();
+        txtQnt = new javax.swing.JLabel();
         CampoQnt = new javax.swing.JSpinner();
         txtMinimo = new javax.swing.JLabel();
         CampoMinimo = new javax.swing.JSpinner();
         txtTipo = new javax.swing.JLabel();
         ComboBoxTipo = new javax.swing.JComboBox<>();
+        painelBotoes = new javax.swing.JPanel();
+        btnNovo = new javax.swing.JButton();
+        btnEditar = new javax.swing.JButton();
+        btnSalvar = new javax.swing.JButton();
+        btnCancelar = new javax.swing.JButton();
+        btnEntrada = new javax.swing.JButton();
+        btnAjustar = new javax.swing.JButton();
+        btnExcluir = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("BLK Burguer - Estoque");
+        setMinimumSize(new java.awt.Dimension(1180, 720));
 
-        tabelaItens.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null}
-            },
-            new String [] {
-                "Nome", "Quantidade", "Valor"
+        painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
+        painelCabecalho.setLayout(new java.awt.BorderLayout());
+        painelTitulo.setLayout(new java.awt.GridLayout(2, 1, 0, 2));
+        txtTitle.setFont(new java.awt.Font("Segoe UI", 1, 22)); // NOI18N
+        txtTitle.setText("Estoque");
+        painelTitulo.add(txtTitle);
+
+        lblSubtitulo.setText("Ingredientes, bebidas e acompanhamentos");
+        painelTitulo.add(lblSubtitulo);
+
+        painelCabecalho.add(painelTitulo, java.awt.BorderLayout.LINE_START);
+
+        painelAcoesTopo.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 8));
+        btnSair.setText("Voltar");
+        btnSair.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSairActionPerformed(evt);
             }
-        ));
+        });
+        painelAcoesTopo.add(btnSair);
+
+        painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
+
+        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+
+        painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
+        painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
+        painelLista.setLayout(new java.awt.BorderLayout(0, 10));
+        painelBusca.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
+        lblBusca.setText("Buscar:");
+        painelBusca.add(lblBusca);
+
+        txtBusca.setPreferredSize(new java.awt.Dimension(260, 30));
+        painelBusca.add(txtBusca);
+
+        lblFiltroTipo.setText("Tipo:");
+        painelBusca.add(lblFiltroTipo);
+
+        cmbFiltroTipo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Todos", "Ingrediente", "Bebida", "Acompanhamento" }));
+        painelBusca.add(cmbFiltroTipo);
+
+        chkSomenteBaixo.setText("Só estoque baixo");
+        painelBusca.add(chkSomenteBaixo);
+
+        btnLimparFiltro.setText("Limpar");
+        btnLimparFiltro.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLimparFiltroActionPerformed(evt);
+            }
+        });
+        painelBusca.add(btnLimparFiltro);
+
+        painelLista.add(painelBusca, java.awt.BorderLayout.PAGE_START);
+
         tabelaItens.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 tabelaItensMouseClicked(evt);
             }
         });
         jScrollPane1.setViewportView(tabelaItens);
+        painelLista.add(jScrollPane1, java.awt.BorderLayout.CENTER);
 
-        txtTitle.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        txtTitle.setText("BLK BURGUER - Ingredientes/itens");
+        painelCorpo.add(painelLista, java.awt.BorderLayout.CENTER);
 
-        TxtNome.setText("Nome:");
+        painelFormulario.setPreferredSize(new java.awt.Dimension(360, 0));
+        painelFormulario.setLayout(new java.awt.BorderLayout(0, 14));
+        painelCampos.setLayout(new java.awt.GridLayout(0, 1, 0, 4));
+        lblFormTitulo.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
+        lblFormTitulo.setText("Cadastro do item");
+        painelCampos.add(lblFormTitulo);
 
-        txtQnt.setText("Quantidade:");
+        TxtNome.setText("Nome");
+        painelCampos.add(TxtNome);
 
-        jScrollPane2.setViewportView(CampoNome);
+        painelCampos.add(CampoNome);
 
+        txtCusto.setText("Custo unitário (R$)");
+        painelCampos.add(txtCusto);
+
+        CampoCusto.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                CampoCustoActionPerformed(evt);
+            }
+        });
+        painelCampos.add(CampoCusto);
+
+        txtQnt.setText("Quantidade em estoque");
+        painelCampos.add(txtQnt);
+
+        painelCampos.add(CampoQnt);
+
+        txtMinimo.setText("Mínimo para alerta");
+        painelCampos.add(txtMinimo);
+
+        CampoMinimo.setModel(new javax.swing.SpinnerNumberModel(10, 0, null, 1));
+        CampoMinimo.setToolTipText("Abaixo desta quantidade o item aparece como estoque baixo");
+        painelCampos.add(CampoMinimo);
+
+        txtTipo.setText("Tipo");
+        painelCampos.add(txtTipo);
+
+        ComboBoxTipo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Ingrediente", "Bebida", "Acompanhamento" }));
+        painelCampos.add(ComboBoxTipo);
+
+        painelFormulario.add(painelCampos, java.awt.BorderLayout.PAGE_START);
+
+        painelBotoes.setLayout(new java.awt.GridLayout(0, 2, 8, 8));
         btnNovo.setText("Novo");
         btnNovo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnNovoActionPerformed(evt);
             }
         });
+        painelBotoes.add(btnNovo);
 
         btnEditar.setText("Editar");
         btnEditar.addActionListener(new java.awt.event.ActionListener() {
@@ -185,20 +316,7 @@ public class TelaEstoque extends javax.swing.JFrame {
                 btnEditarActionPerformed(evt);
             }
         });
-
-        btnExcluir.setText("Excluir");
-        btnExcluir.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnExcluirActionPerformed(evt);
-            }
-        });
-
-        btnCancelar.setText("Cancelar");
-        btnCancelar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnCancelarActionPerformed(evt);
-            }
-        });
+        painelBotoes.add(btnEditar);
 
         btnSalvar.setText("Salvar");
         btnSalvar.addActionListener(new java.awt.event.ActionListener() {
@@ -206,137 +324,56 @@ public class TelaEstoque extends javax.swing.JFrame {
                 btnSalvarActionPerformed(evt);
             }
         });
+        painelBotoes.add(btnSalvar);
 
-        btnSair.setText("Voltar");
-        btnSair.addActionListener(new java.awt.event.ActionListener() {
+        btnCancelar.setText("Cancelar");
+        btnCancelar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSairActionPerformed(evt);
+                btnCancelarActionPerformed(evt);
             }
         });
+        painelBotoes.add(btnCancelar);
 
         btnEntrada.setText("Entrada");
-        btnEntrada.setToolTipText("Registrar entrada de quantidade no item selecionado");
         btnEntrada.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnEntradaActionPerformed(evt);
             }
         });
+        painelBotoes.add(btnEntrada);
 
         btnAjustar.setText("Ajustar");
-        btnAjustar.setToolTipText("Ajustar a quantidade do item selecionado informando o motivo");
         btnAjustar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnAjustarActionPerformed(evt);
             }
         });
+        painelBotoes.add(btnAjustar);
 
-        txtCusto.setText("Custo unit: ");
-
-        CampoCusto.addActionListener(new java.awt.event.ActionListener() {
+        btnExcluir.setText("Excluir");
+        btnExcluir.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                CampoCustoActionPerformed(evt);
+                btnExcluirActionPerformed(evt);
             }
         });
+        painelBotoes.add(btnExcluir);
 
-        txtMinimo.setText("Mínimo:");
-        txtMinimo.setToolTipText("Abaixo desta quantidade o item aparece como estoque baixo");
+        painelFormulario.add(painelBotoes, java.awt.BorderLayout.PAGE_END);
 
-        CampoMinimo.setModel(new javax.swing.SpinnerNumberModel(10, 0, null, 1));
+        painelCorpo.add(painelFormulario, java.awt.BorderLayout.LINE_END);
 
-        txtTipo.setText("Tipo");
-
-        ComboBoxTipo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Ingrediente", "Bebida", "Acompanhamento" }));
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(48, 48, 48)
-                .addComponent(btnNovo, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnEditar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnExcluir, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnEntrada, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnAjustar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnSalvar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnCancelar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnSair, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(48, 48, 48))
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(136, 136, 136)
-                        .addComponent(txtTitle))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(20, 20, 20)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(txtQnt)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(CampoQnt, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(txtMinimo)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(CampoMinimo, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(txtTipo)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(ComboBoxTipo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(TxtNome, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 439, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(txtCusto)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(CampoCusto, javax.swing.GroupLayout.PREFERRED_SIZE, 65, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jScrollPane1))))
-                .addContainerGap(28, Short.MAX_VALUE))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addGap(23, 23, 23)
-                .addComponent(txtTitle)
-                .addGap(36, 36, 36)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(txtCusto)
-                        .addComponent(CampoCusto, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(TxtNome))
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtQnt)
-                    .addComponent(CampoQnt, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtMinimo)
-                    .addComponent(CampoMinimo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtTipo)
-                    .addComponent(ComboBoxTipo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 231, Short.MAX_VALUE)
-                .addGap(20, 20, 20)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnExcluir, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnSalvar, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnCancelar, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnSair, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnEntrada, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnAjustar, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnNovo, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnEditar, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(17, 17, 17))
-        );
+        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+
+    private void btnLimparFiltroActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimparFiltroActionPerformed
+        txtBusca.setText("");
+        cmbFiltroTipo.setSelectedIndex(0);
+        chkSomenteBaixo.setSelected(false);
+        montaTabela();
+    }//GEN-LAST:event_btnLimparFiltroActionPerformed
 
     private void btnSairActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSairActionPerformed
         Main.voltar(this);
@@ -537,7 +574,7 @@ public class TelaEstoque extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField CampoCusto;
     private javax.swing.JSpinner CampoMinimo;
-    private javax.swing.JTextPane CampoNome;
+    private javax.swing.JTextField CampoNome;
     private javax.swing.JSpinner CampoQnt;
     private javax.swing.JComboBox<String> ComboBoxTipo;
     private javax.swing.JLabel TxtNome;
@@ -546,13 +583,28 @@ public class TelaEstoque extends javax.swing.JFrame {
     private javax.swing.JButton btnEditar;
     private javax.swing.JButton btnEntrada;
     private javax.swing.JButton btnExcluir;
+    private javax.swing.JButton btnLimparFiltro;
     private javax.swing.JButton btnNovo;
     private javax.swing.JButton btnSair;
     private javax.swing.JButton btnSalvar;
-    private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.JCheckBox chkSomenteBaixo;
+    private javax.swing.JComboBox<String> cmbFiltroTipo;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JLabel lblBusca;
+    private javax.swing.JLabel lblFiltroTipo;
+    private javax.swing.JLabel lblFormTitulo;
+    private javax.swing.JLabel lblSubtitulo;
+    private javax.swing.JPanel painelAcoesTopo;
+    private javax.swing.JPanel painelBotoes;
+    private javax.swing.JPanel painelBusca;
+    private javax.swing.JPanel painelCabecalho;
+    private javax.swing.JPanel painelCampos;
+    private javax.swing.JPanel painelCorpo;
+    private javax.swing.JPanel painelFormulario;
+    private javax.swing.JPanel painelLista;
+    private javax.swing.JPanel painelTitulo;
     private javax.swing.JTable tabelaItens;
+    private javax.swing.JTextField txtBusca;
     private javax.swing.JLabel txtCusto;
     private javax.swing.JLabel txtMinimo;
     private javax.swing.JLabel txtQnt;

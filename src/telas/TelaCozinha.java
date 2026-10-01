@@ -61,8 +61,7 @@ public class TelaCozinha extends javax.swing.JFrame {
         timerRelogio.start();
         atualizarRelogio();
         carregar();
-        setSize(1366, 768);
-        setLocationRelativeTo(null);
+        Tema.tamanhoPadrao(this);
 
         // F11 alterna tela cheia; Esc sai da tela cheia.
         javax.swing.JRootPane raiz = getRootPane();
@@ -294,8 +293,7 @@ public class TelaCozinha extends javax.swing.JFrame {
             setExtendedState(MAXIMIZED_BOTH);
         } else {
             setExtendedState(NORMAL);
-            setSize(1366, 768);
-            setLocationRelativeTo(null);
+            Tema.tamanhoPadrao(this);
         }
         btnTelaCheia.setText(cheia ? "Sair da tela cheia (Esc)" : "Tela cheia (F11)");
         setVisible(true);

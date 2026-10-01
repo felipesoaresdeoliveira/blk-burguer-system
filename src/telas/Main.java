@@ -27,8 +27,7 @@ public class Main extends javax.swing.JFrame {
         initComponents();
         aplicarVisual();
         aplicarPermissoes();
-        setSize(1280, 800);
-        setLocationRelativeTo(null);
+        Tema.tamanhoPadrao(this);
         if (Sessao.pode(Modulo.DASHBOARD)) {
             carregarDados();
         }

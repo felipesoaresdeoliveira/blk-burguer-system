@@ -140,6 +140,8 @@ public class Vendas extends javax.swing.JFrame {
             });
         }
         TableItensVenda1.setModel(modelo);
+        TableItensVenda1.getColumnModel().getColumn(0).setPreferredWidth(620);
+        TableItensVenda1.getColumnModel().getColumn(1).setPreferredWidth(60);
         NumeroTotal1.setText(String.format("R$ %.2f", totalGeral));
     }
 
@@ -248,58 +250,99 @@ public class Vendas extends javax.swing.JFrame {
         initComponents();
         ui.Tema.janela(this);
         ui.Tema.titulo(BLKBurguer1);
+        ui.Tema.secundario(lblSubtitulo);
         ui.Tema.primario(BtnFinalizarVenda);
         ui.Tema.perigo(cancelarVenda);
+        ui.Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelAdicionar,
+                painelLinhaItem, painelRodape, painelTotal, painelBotoesVenda);
+        TxtADDItem1.setForeground(ui.Tema.TEXTO);
         NumeroTotal1.setForeground(ui.Tema.DESTAQUE);
+        BtnFinalizarVenda.setFont(BtnFinalizarVenda.getFont().deriveFont(java.awt.Font.BOLD, 16f));
+        BtnFinalizarVenda.setPreferredSize(new java.awt.Dimension(200, 46));
         SelectQnt1.setModel(new javax.swing.SpinnerNumberModel(1, 1, 999, 1));
         carregarEstoque();
         atualizarTabela();
-        setLocationRelativeTo(null);
+        ui.Tema.tamanhoPadrao(this);
     }
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        painelCabecalho = new javax.swing.JPanel();
+        painelTitulo = new javax.swing.JPanel();
+        BLKBurguer1 = new javax.swing.JLabel();
+        lblSubtitulo = new javax.swing.JLabel();
+        painelAcoesTopo = new javax.swing.JPanel();
+        voltar = new javax.swing.JButton();
+        painelCorpo = new javax.swing.JPanel();
+        painelAdicionar = new javax.swing.JPanel();
         TxtADDItem1 = new javax.swing.JLabel();
-        DropItemEstoque1 = new javax.swing.JComboBox<>();
+        painelLinhaItem = new javax.swing.JPanel();
         TXTProduto1 = new javax.swing.JLabel();
+        DropItemEstoque1 = new javax.swing.JComboBox<>();
         TxtQnt1 = new javax.swing.JLabel();
         SelectQnt1 = new javax.swing.JSpinner();
+        BtnAdd1 = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         TableItensVenda1 = new javax.swing.JTable();
-        BtnAdd1 = new javax.swing.JButton();
-        BtnFinalizarVenda = new javax.swing.JButton();
+        painelRodape = new javax.swing.JPanel();
+        painelTotal = new javax.swing.JPanel();
         TxtTotal1 = new javax.swing.JLabel();
-        BLKBurguer1 = new javax.swing.JLabel();
         NumeroTotal1 = new javax.swing.JLabel();
-        cancelarVenda = new javax.swing.JButton();
-        voltar = new javax.swing.JButton();
+        painelBotoesVenda = new javax.swing.JPanel();
         jButton1 = new javax.swing.JButton();
+        cancelarVenda = new javax.swing.JButton();
+        BtnFinalizarVenda = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("BLK Burguer - Nova venda");
+        setMinimumSize(new java.awt.Dimension(1180, 720));
 
-        TxtADDItem1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        TxtADDItem1.setText("Adicionar item do estoque");
+        painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
+        painelCabecalho.setLayout(new java.awt.BorderLayout());
+        painelTitulo.setLayout(new java.awt.GridLayout(2, 1, 0, 2));
+        BLKBurguer1.setFont(new java.awt.Font("Segoe UI", 1, 22)); // NOI18N
+        BLKBurguer1.setText("Nova venda");
+        painelTitulo.add(BLKBurguer1);
 
-        DropItemEstoque1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        lblSubtitulo.setText("Balcão: monte o pedido; os lanches vão para a cozinha ao finalizar");
+        painelTitulo.add(lblSubtitulo);
 
-        TXTProduto1.setText("Produto: ");
+        painelCabecalho.add(painelTitulo, java.awt.BorderLayout.LINE_START);
 
-        TxtQnt1.setText("Qnt: ");
-
-        TableItensVenda1.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Produto", "Qnt", "Preço unit.", "Subtotal"
+        painelAcoesTopo.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 8));
+        voltar.setText("Voltar");
+        voltar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                voltarActionPerformed(evt);
             }
-        ));
-        jScrollPane2.setViewportView(TableItensVenda1);
+        });
+        painelAcoesTopo.add(voltar);
+
+        painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
+
+        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+
+        painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
+        painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
+        painelAdicionar.setLayout(new java.awt.BorderLayout(0, 8));
+        TxtADDItem1.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
+        TxtADDItem1.setText("Adicionar item");
+        painelAdicionar.add(TxtADDItem1, java.awt.BorderLayout.PAGE_START);
+
+        painelLinhaItem.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
+        TXTProduto1.setText("Produto:");
+        painelLinhaItem.add(TXTProduto1);
+
+        DropItemEstoque1.setPreferredSize(new java.awt.Dimension(420, 34));
+        painelLinhaItem.add(DropItemEstoque1);
+
+        TxtQnt1.setText("Qtd:");
+        painelLinhaItem.add(TxtQnt1);
+
+        SelectQnt1.setPreferredSize(new java.awt.Dimension(80, 34));
+        painelLinhaItem.add(SelectQnt1);
 
         BtnAdd1.setText("Adicionar");
         BtnAdd1.addActionListener(new java.awt.event.ActionListener() {
@@ -307,120 +350,61 @@ public class Vendas extends javax.swing.JFrame {
                 BtnAdd1ActionPerformed(evt);
             }
         });
+        painelLinhaItem.add(BtnAdd1);
 
-        BtnFinalizarVenda.setText("Finalizar Venda");
-        BtnFinalizarVenda.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                BtnFinalizarVendaActionPerformed(evt);
-            }
-        });
+        painelAdicionar.add(painelLinhaItem, java.awt.BorderLayout.CENTER);
 
-        TxtTotal1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        painelCorpo.add(painelAdicionar, java.awt.BorderLayout.PAGE_START);
+
+        jScrollPane2.setViewportView(TableItensVenda1);
+        painelCorpo.add(jScrollPane2, java.awt.BorderLayout.CENTER);
+
+        painelRodape.setLayout(new java.awt.BorderLayout());
+        painelTotal.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
+        TxtTotal1.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         TxtTotal1.setText("Total:");
+        painelTotal.add(TxtTotal1);
 
-        BLKBurguer1.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        BLKBurguer1.setText("BLK BURGUER - Vendas");
+        NumeroTotal1.setFont(new java.awt.Font("Segoe UI", 1, 30)); // NOI18N
+        NumeroTotal1.setText("R$ 0,00");
+        painelTotal.add(NumeroTotal1);
 
-        NumeroTotal1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        NumeroTotal1.setForeground(new java.awt.Color(0, 204, 0));
-        NumeroTotal1.setText("0");
+        painelRodape.add(painelTotal, java.awt.BorderLayout.LINE_START);
 
-        cancelarVenda.setText("Cancelar Venda");
-        cancelarVenda.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cancelarVendaActionPerformed(evt);
-            }
-        });
-
-        voltar.setText("Voltar");
-        voltar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                voltarActionPerformed(evt);
-            }
-        });
-
-        jButton1.setText("Remover Item");
+        painelBotoesVenda.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 10, 0));
+        jButton1.setText("Remover item");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
             }
         });
+        painelBotoesVenda.add(jButton1);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(50, 50, 50)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addGap(0, 0, Short.MAX_VALUE)
-                                        .addComponent(BLKBurguer1))
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addComponent(TXTProduto1)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(DropItemEstoque1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(TxtQnt1)))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(SelectQnt1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(BtnAdd1, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(50, 50, 50))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(TxtADDItem1)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(TxtTotal1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(NumeroTotal1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 102, Short.MAX_VALUE)
-                        .addComponent(jButton1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(cancelarVenda)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(BtnFinalizarVenda)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(voltar)
-                        .addGap(56, 56, 56))))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(28, Short.MAX_VALUE)
-                .addComponent(BLKBurguer1, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(TxtADDItem1, javax.swing.GroupLayout.PREFERRED_SIZE, 14, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(TxtQnt1, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(SelectQnt1, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(BtnAdd1, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(DropItemEstoque1, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(TXTProduto1)))
-                .addGap(60, 60, 60)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 231, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(TxtTotal1)
-                        .addComponent(NumeroTotal1))
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(cancelarVenda, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(BtnFinalizarVenda, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(voltar, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(51, 51, 51))
-        );
+        cancelarVenda.setText("Cancelar venda");
+        cancelarVenda.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cancelarVendaActionPerformed(evt);
+            }
+        });
+        painelBotoesVenda.add(cancelarVenda);
+
+        BtnFinalizarVenda.setText("Finalizar venda");
+        BtnFinalizarVenda.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BtnFinalizarVendaActionPerformed(evt);
+            }
+        });
+        painelBotoesVenda.add(BtnFinalizarVenda);
+
+        painelRodape.add(painelBotoesVenda, java.awt.BorderLayout.LINE_END);
+
+        painelCorpo.add(painelRodape, java.awt.BorderLayout.PAGE_END);
+
+        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
 
     private void BtnFinalizarVendaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnFinalizarVendaActionPerformed
         if (itensVenda.isEmpty()) {
@@ -578,6 +562,16 @@ public class Vendas extends javax.swing.JFrame {
     private javax.swing.JButton cancelarVenda;
     private javax.swing.JButton jButton1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JLabel lblSubtitulo;
+    private javax.swing.JPanel painelAcoesTopo;
+    private javax.swing.JPanel painelAdicionar;
+    private javax.swing.JPanel painelBotoesVenda;
+    private javax.swing.JPanel painelCabecalho;
+    private javax.swing.JPanel painelCorpo;
+    private javax.swing.JPanel painelLinhaItem;
+    private javax.swing.JPanel painelRodape;
+    private javax.swing.JPanel painelTitulo;
+    private javax.swing.JPanel painelTotal;
     private javax.swing.JButton voltar;
     // End of variables declaration//GEN-END:variables
 }
