@@ -312,7 +312,7 @@ public class Vendas extends javax.swing.JFrame {
         painelCabecalho.add(painelTitulo, java.awt.BorderLayout.LINE_START);
 
         painelAcoesTopo.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 8));
-        voltar.setText("Voltar");
+        voltar.setText("Voltar ao caixa");
         voltar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 voltarActionPerformed(evt);
@@ -478,7 +478,8 @@ public class Vendas extends javax.swing.JFrame {
     }//GEN-LAST:event_BtnAdd1ActionPerformed
 
     private void voltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_voltarActionPerformed
-        Main.voltar(this);
+        dispose();
+        new TelaCaixa().setVisible(true);
 
     }//GEN-LAST:event_voltarActionPerformed
 

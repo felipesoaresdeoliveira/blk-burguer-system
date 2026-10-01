@@ -86,7 +86,7 @@
           <SubComponents>
             <Component class="javax.swing.JButton" name="voltar">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Voltar"/>
+                <Property name="text" type="java.lang.String" value="Voltar ao caixa"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="voltarActionPerformed"/>

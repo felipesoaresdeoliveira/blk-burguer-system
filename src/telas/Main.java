@@ -35,14 +35,25 @@ public class Main extends javax.swing.JFrame {
 
     // ------------------------------------------------------------ navegação
 
-    /** Abre a tela inicial do usuário logado: a cozinha vai direto para o painel da TV. */
+    /**
+     * Abre a tela inicial do usuário logado: a cozinha vai direto para o painel
+     * da TV e o caixa (sem dashboard) direto para a tela do Caixa, onde vende.
+     */
     public static void abrirInicio() {
         Usuario u = Sessao.usuario();
         if (u != null && u.getPerfil() == Perfil.COZINHA) {
             TelaCozinha.abrirTelaCheia();
+        } else if (!Sessao.pode(Modulo.DASHBOARD) && Sessao.pode(Modulo.CAIXA)) {
+            new TelaCaixa().setVisible(true);
         } else {
             new Main().setVisible(true);
         }
+    }
+
+    /** Abre o menu principal (usado pelo "Menu" da tela do Caixa). */
+    public static void abrirMenu(javax.swing.JFrame tela) {
+        tela.dispose();
+        new Main().setVisible(true);
     }
 
     /** Volta de uma tela para o início do usuário. */
@@ -61,7 +72,7 @@ public class Main extends javax.swing.JFrame {
     /** Esconde do menu o que o perfil não acessa; sem dashboard, mostra atalhos. */
     private void aplicarPermissoes() {
         Object[][] itens = {
-            {btnVisaoGeral, Modulo.DASHBOARD}, {btnVenda, Modulo.VENDA_BALCAO}, {btnCaixa, Modulo.CAIXA},
+            {btnVisaoGeral, Modulo.DASHBOARD}, {btnCaixa, Modulo.CAIXA},
             {btnCozinha, Modulo.COZINHA}, {btnHistorico, Modulo.HISTORICO}, {btnProdutos, Modulo.PRODUTOS},
             {btnEstoque, Modulo.ESTOQUE}, {btnRelatorio, Modulo.RELATORIOS}, {btnUsuarios, Modulo.USUARIOS}};
         java.util.List<javax.swing.JButton> atalhos = new java.util.ArrayList<>();
@@ -97,7 +108,7 @@ public class Main extends javax.swing.JFrame {
             b.setFont(b.getFont().deriveFont(java.awt.Font.BOLD, 20f));
             b.setPreferredSize(new java.awt.Dimension(260, 120));
             b.setFocusable(false);
-            if (origem == btnVenda) {
+            if (origem == btnCaixa) {
                 Tema.primario(b);
                 b.putClientProperty("FlatLaf.style", "background: #F5A524; foreground: #141414; font: bold +8;"
                         + " hoverBackground: #FFB63D; borderWidth: 0; arc: 16");
@@ -131,7 +142,7 @@ public class Main extends javax.swing.JFrame {
         Tema.secundario(lblSlogan, lblData);
         lblTitulo.setForeground(Tema.TEXTO);
 
-        for (javax.swing.JButton b : new javax.swing.JButton[]{btnVisaoGeral, btnVenda, btnCaixa, btnCozinha,
+        for (javax.swing.JButton b : new javax.swing.JButton[]{btnVisaoGeral, btnCaixa, btnCozinha,
             btnHistorico, btnProdutos, btnEstoque, btnRelatorio, btnUsuarios, btnSair}) {
             b.putClientProperty("JButton.buttonType", "toolBarButton");
             b.putClientProperty("FlatLaf.style", "margin: 9,12,9,12; font: +1; hoverBackground: #1F1F1E");
@@ -141,10 +152,6 @@ public class Main extends javax.swing.JFrame {
         btnVisaoGeral.putClientProperty("FlatLaf.style",
                 "margin: 9,12,9,12; font: +1 bold; background: #2A2413; foreground: #F5A524");
         btnVisaoGeral.putClientProperty("JButton.buttonType", null);
-        Tema.primario(btnVenda);
-        btnVenda.putClientProperty("JButton.buttonType", null);
-        btnVenda.putClientProperty("FlatLaf.style", "margin: 9,12,9,12; font: +1 bold; background: #F5A524;"
-                + " foreground: #141414; hoverBackground: #FFB63D; borderWidth: 0; focusWidth: 0");
         btnSair.setForeground(Tema.TEXTO_FRACO);
         lblUsuarioLogado.setForeground(Tema.TEXTO_SECUNDARIO);
         getRootPane().setDefaultButton(null);
@@ -327,7 +334,6 @@ public class Main extends javax.swing.JFrame {
         lblSlogan = new javax.swing.JLabel();
         painelBotoes = new javax.swing.JPanel();
         btnVisaoGeral = new javax.swing.JButton();
-        btnVenda = new javax.swing.JButton();
         btnCaixa = new javax.swing.JButton();
         btnCozinha = new javax.swing.JButton();
         btnHistorico = new javax.swing.JButton();
@@ -385,15 +391,6 @@ public class Main extends javax.swing.JFrame {
             }
         });
         painelBotoes.add(btnVisaoGeral);
-
-        btnVenda.setText("Nova venda");
-        btnVenda.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnVenda.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnVendaActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnVenda);
 
         btnCaixa.setText("Caixa");
         btnCaixa.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
@@ -555,10 +552,6 @@ public class Main extends javax.swing.JFrame {
         carregarDados();
     }//GEN-LAST:event_btnVisaoGeralActionPerformed
 
-    private void btnVendaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVendaActionPerformed
-        abrirSePuder(Modulo.VENDA_BALCAO, Vendas::new);
-    }//GEN-LAST:event_btnVendaActionPerformed
-
     private void btnHistoricoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHistoricoActionPerformed
         abrirSePuder(Modulo.HISTORICO, TelaHistoricoVendas::new);
     }//GEN-LAST:event_btnHistoricoActionPerformed
@@ -611,7 +604,6 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JButton btnRelatorio;
     private javax.swing.JButton btnSair;
     private javax.swing.JButton btnUsuarios;
-    private javax.swing.JButton btnVenda;
     private javax.swing.JButton btnVisaoGeral;
     private ui.CartaoIndicador cardEstoque;
     private ui.CartaoIndicador cardFaturamento;
