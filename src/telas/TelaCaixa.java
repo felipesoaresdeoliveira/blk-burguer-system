@@ -23,7 +23,16 @@ public class TelaCaixa extends javax.swing.JFrame {
         initComponents();
         Tema.janela(this);
         Tema.titulo(lblTitulo);
-        Tema.primario(btnAbrir, btnFechar);
+        Tema.primario(btnAbrir, btnFechar, btnNovaVenda);
+        btnNovaVenda.putClientProperty("FlatLaf.style", "background: #F5A524; foreground: #141414; font: bold +4;"
+                + " hoverBackground: #FFB63D; borderWidth: 0; focusWidth: 0; margin: 10,22,10,22;"
+                + " disabledBackground: #3A3016; disabledText: #8C7A4E");
+        // Quem não tem dashboard (perfil Caixa) começa aqui: o botão leva ao menu.
+        if (!service.Sessao.pode(entidades.Modulo.DASHBOARD)) {
+            btnVoltar.setText("Menu");
+        }
+        getRootPane().registerKeyboardAction(e -> novaVenda(),
+                javax.swing.KeyStroke.getKeyStroke("F2"), javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
         Tema.perigo(btnSangria);
         getContentPane().setBackground(Tema.FUNDO);
         for (javax.swing.JPanel p : new javax.swing.JPanel[]{painelCabecalho, painelTitulo, painelAcoes, painelCorpo,
@@ -57,6 +66,8 @@ public class TelaCaixa extends javax.swing.JFrame {
             return;
         }
         boolean aberto = caixa != null;
+        btnNovaVenda.setEnabled(aberto && service.Sessao.pode(entidades.Modulo.VENDA_BALCAO));
+        btnNovaVenda.setToolTipText(aberto ? "Registrar uma venda no balcão" : "Abra o caixa para vender");
         btnAbrir.setVisible(!aberto);
         btnSangria.setVisible(aberto);
         btnSuprimento.setVisible(aberto);
@@ -132,6 +143,16 @@ public class TelaCaixa extends javax.swing.JFrame {
         }
         tabelaHist.setModel(modelo);
         tabelaHist.getColumnModel().getColumn(0).setPreferredWidth(40);
+    }
+
+    /** O caixa anota o pedido, registra a venda e recebe o pagamento. */
+    private void novaVenda() {
+        if (!btnNovaVenda.isEnabled()) {
+            JOptionPane.showMessageDialog(this, "Abra o caixa para começar a vender.", "Caixa", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        dispose();
+        new Vendas().setVisible(true);
     }
 
     private void abrir() {
@@ -292,6 +313,7 @@ public class TelaCaixa extends javax.swing.JFrame {
         lblTitulo = new javax.swing.JLabel();
         lblStatus = new javax.swing.JLabel();
         painelAcoes = new javax.swing.JPanel();
+        btnNovaVenda = new javax.swing.JButton();
         btnAbrir = new javax.swing.JButton();
         btnSuprimento = new javax.swing.JButton();
         btnSangria = new javax.swing.JButton();
@@ -332,6 +354,14 @@ public class TelaCaixa extends javax.swing.JFrame {
         painelCabecalho.add(painelTitulo, java.awt.BorderLayout.LINE_START);
 
         painelAcoes.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 8));
+        btnNovaVenda.setText("Nova venda (F2)");
+        btnNovaVenda.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnNovaVendaActionPerformed(evt);
+            }
+        });
+        painelAcoes.add(btnNovaVenda);
+
         btnAbrir.setText("Abrir caixa");
         btnAbrir.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -433,6 +463,10 @@ public class TelaCaixa extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void btnNovaVendaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNovaVendaActionPerformed
+        novaVenda();
+    }//GEN-LAST:event_btnNovaVendaActionPerformed
+
     private void btnAbrirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAbrirActionPerformed
         abrir();
     }//GEN-LAST:event_btnAbrirActionPerformed
@@ -454,13 +488,18 @@ public class TelaCaixa extends javax.swing.JFrame {
     }//GEN-LAST:event_btnAtualizarActionPerformed
 
     private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed
-        Main.voltar(this);
+        if (service.Sessao.pode(entidades.Modulo.DASHBOARD)) {
+            Main.voltar(this);
+        } else {
+            Main.abrirMenu(this);
+        }
     }//GEN-LAST:event_btnVoltarActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAbrir;
     private javax.swing.JButton btnAtualizar;
     private javax.swing.JButton btnFechar;
+    private javax.swing.JButton btnNovaVenda;
     private javax.swing.JButton btnSangria;
     private javax.swing.JButton btnSuprimento;
     private javax.swing.JButton btnVoltar;
