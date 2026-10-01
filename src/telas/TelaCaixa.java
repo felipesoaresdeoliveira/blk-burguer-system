@@ -18,6 +18,7 @@ public class TelaCaixa extends javax.swing.JFrame {
 
     private final CaixaService caixaService = new CaixaService();
     private Caixa caixa;
+    private java.util.List<entidades.Pedido> aReceber = new java.util.ArrayList<>();
 
     public TelaCaixa() {
         initComponents();
@@ -31,16 +32,20 @@ public class TelaCaixa extends javax.swing.JFrame {
         if (!service.Sessao.pode(entidades.Modulo.DASHBOARD)) {
             btnVoltar.setText("Menu");
         }
+        new javax.swing.Timer(5000, e -> {
+            if (isShowing()) {
+                carregar();
+            }
+        }).start();
         getRootPane().registerKeyboardAction(e -> novaVenda(),
                 javax.swing.KeyStroke.getKeyStroke("F2"), javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
-        Tema.perigo(btnSangria);
         getContentPane().setBackground(Tema.FUNDO);
         for (javax.swing.JPanel p : new javax.swing.JPanel[]{painelCabecalho, painelTitulo, painelAcoes, painelCorpo,
-            painelIndicadores, painelTabelas, painelMov, painelHist}) {
+            painelIndicadores, painelTabelas, painelMov, painelReceber}) {
             p.setBackground(Tema.FUNDO);
         }
         lblMov.setForeground(Tema.TEXTO);
-        lblHist.setForeground(Tema.TEXTO);
+        lblReceber.setForeground(Tema.TEXTO);
         carregar();
         Tema.tamanhoPadrao(this);
     }
@@ -69,8 +74,8 @@ public class TelaCaixa extends javax.swing.JFrame {
         btnNovaVenda.setEnabled(aberto && service.Sessao.pode(entidades.Modulo.VENDA_BALCAO));
         btnNovaVenda.setToolTipText(aberto ? "Registrar uma venda no balcão" : "Abra o caixa para vender");
         btnAbrir.setVisible(!aberto);
-        btnSangria.setVisible(aberto);
-        btnSuprimento.setVisible(aberto);
+        btnMesas.setVisible(service.Sessao.pode(entidades.Modulo.MESAS));
+        btnPedidos.setVisible(service.Sessao.pode(entidades.Modulo.PEDIDOS));
         btnFechar.setVisible(aberto);
         if (aberto) {
             lblStatus.setText("● Aberto desde " + caixa.getAbertoEm().format(DATA_HORA)
@@ -87,7 +92,7 @@ public class TelaCaixa extends javax.swing.JFrame {
             }
         }
         mostrarMovimentacoes();
-        mostrarHistorico();
+        mostrarAReceber();
     }
 
     private void mostrarIndicadores(Caixa c) {
@@ -125,6 +130,49 @@ public class TelaCaixa extends javax.swing.JFrame {
         tabelaMov.setModel(modelo);
     }
 
+    /** Pedidos abertos com saldo: mesas (as que pediram a conta primeiro), retiradas e deliveries. */
+    private void mostrarAReceber() {
+        javax.swing.table.DefaultTableModel modelo = new javax.swing.table.DefaultTableModel(
+                new String[]{"Nº", "Pedido", "Situação", "Falta pagar"}, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
+        };
+        aReceber = new java.util.ArrayList<>();
+        try {
+            for (entidades.Pedido p : new service.PedidoService().emAndamento()) {
+                if (p.getSituacao() == entidades.SituacaoPedido.ABERTO && p.getSaldo() > 0) {
+                    aReceber.add(p);
+                }
+            }
+            aReceber.sort((a, b) -> Boolean.compare(b.isContaSolicitada(), a.isContaSolicitada()));
+            for (entidades.Pedido p : aReceber) {
+                modelo.addRow(new Object[]{p.getId(), p.getDescricao(),
+                    p.isContaSolicitada() ? "Pediu a conta" : p.getAndamento(), Tema.reais(p.getSaldo())});
+            }
+        } catch (Exception e) {
+            // Informativo; o restante da tela continua funcionando.
+        }
+        tabelaReceber.setModel(modelo);
+        tabelaReceber.getColumnModel().getColumn(0).setPreferredWidth(40);
+        tabelaReceber.getColumnModel().getColumn(1).setPreferredWidth(220);
+    }
+
+    private void receberSelecionado() {
+        int linha = tabelaReceber.getSelectedRow();
+        if (linha < 0 || linha >= aReceber.size()) {
+            return;
+        }
+        if (caixa == null) {
+            JOptionPane.showMessageDialog(this, "Abra o caixa antes de receber.", "Caixa", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        if (DialogoPagamento.receber(this, aReceber.get(linha).getId())) {
+            carregar();
+        }
+    }
+
     private void mostrarHistorico() {
         javax.swing.table.DefaultTableModel modelo = new javax.swing.table.DefaultTableModel(
                 new String[]{"Nº", "Abertura", "Fechamento", "Vendido"}, 0) {
@@ -139,10 +187,36 @@ public class TelaCaixa extends javax.swing.JFrame {
                     ((java.time.LocalDateTime) h[2]).format(DATA_HORA), Tema.reais((Double) h[3])});
             }
         } catch (Exception e) {
-            // Histórico é informativo; a tela continua funcionando sem ele.
+            JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
+            return;
         }
-        tabelaHist.setModel(modelo);
-        tabelaHist.getColumnModel().getColumn(0).setPreferredWidth(40);
+        javax.swing.JTable t = new javax.swing.JTable(modelo);
+        javax.swing.JScrollPane sp = new javax.swing.JScrollPane(t);
+        sp.setPreferredSize(new java.awt.Dimension(560, 320));
+        JOptionPane.showMessageDialog(this, sp, "Caixas anteriores", JOptionPane.PLAIN_MESSAGE);
+    }
+
+    /** Menu "Mais": suprimento, sangria e caixas anteriores. */
+    private void menuMais() {
+        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+        javax.swing.JMenuItem suprimento = new javax.swing.JMenuItem("Suprimento (entrada de dinheiro)");
+        suprimento.setEnabled(caixa != null);
+        suprimento.addActionListener(e -> movimentar(CaixaService.SUPRIMENTO));
+        javax.swing.JMenuItem sangria = new javax.swing.JMenuItem("Sangria (retirada de dinheiro)");
+        sangria.setEnabled(caixa != null);
+        sangria.addActionListener(e -> movimentar(CaixaService.SANGRIA));
+        javax.swing.JMenuItem historico = new javax.swing.JMenuItem("Caixas anteriores");
+        historico.addActionListener(e -> mostrarHistorico());
+        menu.add(suprimento);
+        menu.add(sangria);
+        menu.addSeparator();
+        menu.add(historico);
+        menu.show(btnMais, 0, btnMais.getHeight());
+    }
+
+    private void irPara(javax.swing.JFrame tela) {
+        dispose();
+        tela.setVisible(true);
     }
 
     /** O caixa anota o pedido, registra a venda e recebe o pagamento. */
@@ -314,11 +388,11 @@ public class TelaCaixa extends javax.swing.JFrame {
         lblStatus = new javax.swing.JLabel();
         painelAcoes = new javax.swing.JPanel();
         btnNovaVenda = new javax.swing.JButton();
+        btnMesas = new javax.swing.JButton();
+        btnPedidos = new javax.swing.JButton();
         btnAbrir = new javax.swing.JButton();
-        btnSuprimento = new javax.swing.JButton();
-        btnSangria = new javax.swing.JButton();
+        btnMais = new javax.swing.JButton();
         btnFechar = new javax.swing.JButton();
-        btnAtualizar = new javax.swing.JButton();
         btnVoltar = new javax.swing.JButton();
         painelCorpo = new javax.swing.JPanel();
         painelIndicadores = new javax.swing.JPanel();
@@ -328,14 +402,14 @@ public class TelaCaixa extends javax.swing.JFrame {
         cardCredito = new ui.CartaoIndicador();
         cardTotal = new ui.CartaoIndicador();
         painelTabelas = new javax.swing.JPanel();
+        painelReceber = new javax.swing.JPanel();
+        lblReceber = new javax.swing.JLabel();
+        scrollReceber = new javax.swing.JScrollPane();
+        tabelaReceber = new javax.swing.JTable();
         painelMov = new javax.swing.JPanel();
         lblMov = new javax.swing.JLabel();
         scrollMov = new javax.swing.JScrollPane();
         tabelaMov = new javax.swing.JTable();
-        painelHist = new javax.swing.JPanel();
-        lblHist = new javax.swing.JLabel();
-        scrollHist = new javax.swing.JScrollPane();
-        tabelaHist = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("BLK Burguer - Caixa");
@@ -362,6 +436,22 @@ public class TelaCaixa extends javax.swing.JFrame {
         });
         painelAcoes.add(btnNovaVenda);
 
+        btnMesas.setText("Mesas");
+        btnMesas.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMesasActionPerformed(evt);
+            }
+        });
+        painelAcoes.add(btnMesas);
+
+        btnPedidos.setText("Pedidos");
+        btnPedidos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPedidosActionPerformed(evt);
+            }
+        });
+        painelAcoes.add(btnPedidos);
+
         btnAbrir.setText("Abrir caixa");
         btnAbrir.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -370,21 +460,13 @@ public class TelaCaixa extends javax.swing.JFrame {
         });
         painelAcoes.add(btnAbrir);
 
-        btnSuprimento.setText("Suprimento");
-        btnSuprimento.addActionListener(new java.awt.event.ActionListener() {
+        btnMais.setText("Mais ▾");
+        btnMais.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSuprimentoActionPerformed(evt);
+                btnMaisActionPerformed(evt);
             }
         });
-        painelAcoes.add(btnSuprimento);
-
-        btnSangria.setText("Sangria");
-        btnSangria.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSangriaActionPerformed(evt);
-            }
-        });
-        painelAcoes.add(btnSangria);
+        painelAcoes.add(btnMais);
 
         btnFechar.setText("Fechar caixa");
         btnFechar.addActionListener(new java.awt.event.ActionListener() {
@@ -393,14 +475,6 @@ public class TelaCaixa extends javax.swing.JFrame {
             }
         });
         painelAcoes.add(btnFechar);
-
-        btnAtualizar.setText("Atualizar");
-        btnAtualizar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnAtualizarActionPerformed(evt);
-            }
-        });
-        painelAcoes.add(btnAtualizar);
 
         btnVoltar.setText("Voltar");
         btnVoltar.addActionListener(new java.awt.event.ActionListener() {
@@ -436,6 +510,21 @@ public class TelaCaixa extends javax.swing.JFrame {
         painelCorpo.add(painelIndicadores, java.awt.BorderLayout.PAGE_START);
 
         painelTabelas.setLayout(new java.awt.GridLayout(1, 2, 18, 0));
+        painelReceber.setLayout(new java.awt.BorderLayout(0, 8));
+        lblReceber.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
+        lblReceber.setText("Pedidos a receber (dois cliques para receber)");
+        painelReceber.add(lblReceber, java.awt.BorderLayout.PAGE_START);
+
+        tabelaReceber.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tabelaReceberMouseClicked(evt);
+            }
+        });
+        scrollReceber.setViewportView(tabelaReceber);
+        painelReceber.add(scrollReceber, java.awt.BorderLayout.CENTER);
+
+        painelTabelas.add(painelReceber);
+
         painelMov.setLayout(new java.awt.BorderLayout(0, 8));
         lblMov.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblMov.setText("Movimentações do caixa atual");
@@ -445,16 +534,6 @@ public class TelaCaixa extends javax.swing.JFrame {
         painelMov.add(scrollMov, java.awt.BorderLayout.CENTER);
 
         painelTabelas.add(painelMov);
-
-        painelHist.setLayout(new java.awt.BorderLayout(0, 8));
-        lblHist.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
-        lblHist.setText("Caixas anteriores");
-        painelHist.add(lblHist, java.awt.BorderLayout.PAGE_START);
-
-        scrollHist.setViewportView(tabelaHist);
-        painelHist.add(scrollHist, java.awt.BorderLayout.CENTER);
-
-        painelTabelas.add(painelHist);
 
         painelCorpo.add(painelTabelas, java.awt.BorderLayout.CENTER);
 
@@ -471,21 +550,27 @@ public class TelaCaixa extends javax.swing.JFrame {
         abrir();
     }//GEN-LAST:event_btnAbrirActionPerformed
 
-    private void btnSuprimentoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSuprimentoActionPerformed
-        movimentar(CaixaService.SUPRIMENTO);
-    }//GEN-LAST:event_btnSuprimentoActionPerformed
+    private void btnMaisActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMaisActionPerformed
+        menuMais();
+    }//GEN-LAST:event_btnMaisActionPerformed
 
-    private void btnSangriaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSangriaActionPerformed
-        movimentar(CaixaService.SANGRIA);
-    }//GEN-LAST:event_btnSangriaActionPerformed
+    private void btnMesasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMesasActionPerformed
+        irPara(new TelaMesas());
+    }//GEN-LAST:event_btnMesasActionPerformed
+
+    private void btnPedidosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPedidosActionPerformed
+        irPara(new TelaPedidos());
+    }//GEN-LAST:event_btnPedidosActionPerformed
+
+    private void tabelaReceberMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tabelaReceberMouseClicked
+        if (evt.getClickCount() == 2) {
+            receberSelecionado();
+        }
+    }//GEN-LAST:event_tabelaReceberMouseClicked
 
     private void btnFecharActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFecharActionPerformed
         fechar();
     }//GEN-LAST:event_btnFecharActionPerformed
-
-    private void btnAtualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAtualizarActionPerformed
-        carregar();
-    }//GEN-LAST:event_btnAtualizarActionPerformed
 
     private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed
         if (service.Sessao.pode(entidades.Modulo.DASHBOARD)) {
@@ -497,32 +582,32 @@ public class TelaCaixa extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAbrir;
-    private javax.swing.JButton btnAtualizar;
     private javax.swing.JButton btnFechar;
+    private javax.swing.JButton btnMais;
+    private javax.swing.JButton btnMesas;
     private javax.swing.JButton btnNovaVenda;
-    private javax.swing.JButton btnSangria;
-    private javax.swing.JButton btnSuprimento;
+    private javax.swing.JButton btnPedidos;
     private javax.swing.JButton btnVoltar;
     private ui.CartaoIndicador cardCredito;
     private ui.CartaoIndicador cardDebito;
     private ui.CartaoIndicador cardDinheiro;
     private ui.CartaoIndicador cardPix;
     private ui.CartaoIndicador cardTotal;
-    private javax.swing.JLabel lblHist;
     private javax.swing.JLabel lblMov;
+    private javax.swing.JLabel lblReceber;
     private javax.swing.JLabel lblStatus;
     private javax.swing.JLabel lblTitulo;
     private javax.swing.JPanel painelAcoes;
     private javax.swing.JPanel painelCabecalho;
     private javax.swing.JPanel painelCorpo;
-    private javax.swing.JPanel painelHist;
     private javax.swing.JPanel painelIndicadores;
     private javax.swing.JPanel painelMov;
+    private javax.swing.JPanel painelReceber;
     private javax.swing.JPanel painelTabelas;
     private javax.swing.JPanel painelTitulo;
-    private javax.swing.JScrollPane scrollHist;
     private javax.swing.JScrollPane scrollMov;
-    private javax.swing.JTable tabelaHist;
+    private javax.swing.JScrollPane scrollReceber;
     private javax.swing.JTable tabelaMov;
+    private javax.swing.JTable tabelaReceber;
     // End of variables declaration//GEN-END:variables
 }

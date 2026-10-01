@@ -9,7 +9,9 @@ public enum Perfil {
 
     ADMIN("Administrador", EnumSet.allOf(Modulo.class)),
     GERENTE("Gerente", EnumSet.complementOf(EnumSet.of(Modulo.USUARIOS))),
-    CAIXA("Caixa", EnumSet.of(Modulo.VENDA_BALCAO, Modulo.CAIXA, Modulo.CLIENTES, Modulo.HISTORICO)),
+    // Enquanto não há o app do garçom, o caixa também anota pedidos de mesa, retirada e delivery.
+    CAIXA("Caixa", EnumSet.of(Modulo.VENDA_BALCAO, Modulo.CAIXA, Modulo.PEDIDOS, Modulo.MESAS,
+            Modulo.CLIENTES, Modulo.HISTORICO)),
     GARCOM("Garçom", EnumSet.of(Modulo.PEDIDOS, Modulo.MESAS, Modulo.CLIENTES)),
     COZINHA("Cozinha", EnumSet.of(Modulo.COZINHA));
 
@@ -34,7 +36,7 @@ public enum Perfil {
         switch (this) {
             case ADMIN: return "O chefe: acesso total, cria e gerencia as contas";
             case GERENTE: return "Gerencia a operação: tudo, exceto criar contas";
-            case CAIXA: return "Balcão: vender, receber, abrir e fechar o caixa";
+            case CAIXA: return "Vende no balcão, anota mesas/retirada/delivery, recebe e fecha o caixa";
             case GARCOM: return "Mesas, comandas, pedidos e clientes";
             default: return "Painel da cozinha (ideal para a TV)";
         }
