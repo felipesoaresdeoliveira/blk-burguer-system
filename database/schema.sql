@@ -146,7 +146,9 @@ ALTER TABLE "Pedido" ADD COLUMN IF NOT EXISTS status_entrega VARCHAR(20)
 ALTER TABLE "Pedido" ADD COLUMN IF NOT EXISTS conta_solicitada BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE "Pedido" ADD COLUMN IF NOT EXISTS aberto_por INTEGER REFERENCES "Login"("Id");
 ALTER TABLE "Pedido" ADD COLUMN IF NOT EXISTS fechado_em TIMESTAMP WITHOUT TIME ZONE;
-CREATE UNIQUE INDEX IF NOT EXISTS pedido_um_por_mesa ON "Pedido"(mesa_id) WHERE situacao = 'ABERTO';
+-- Uma comanda aberta por mesa. Vendas de balcão podem indicar a mesa onde o cliente está (só para entregar).
+DROP INDEX IF EXISTS pedido_um_por_mesa;
+CREATE UNIQUE INDEX IF NOT EXISTS pedido_uma_comanda_por_mesa ON "Pedido"(mesa_id) WHERE situacao = 'ABERTO' AND tipo = 'MESA';
 UPDATE "Pedido" SET fechado_em = data_pedido WHERE situacao = 'PAGO' AND fechado_em IS NULL;
 
 -- Itens do pedido: observação e acompanhamento na cozinha (#28, #32)
