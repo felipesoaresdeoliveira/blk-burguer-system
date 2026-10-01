@@ -97,17 +97,25 @@ public class Pedido {
     public List<Venda> getItens() { return itens; }
     public void setItens(List<Venda> itens) { this.itens = itens; }
 
-    /** Como o pedido é chamado nas telas: "Mesa 4", "Senha 12", "Delivery - Maria". */
+    /**
+     * Como o pedido é chamado nas telas e na cozinha: "Mesa 4", "Mesa 4 | Senha 12",
+     * "Senha 12 - Ana", "Senha 7 | para viagem", "Delivery - Maria".
+     */
     public String getDescricao() {
+        String nome = identificacao != null && !identificacao.isEmpty() ? identificacao
+                : clienteNome != null ? clienteNome : null;
         switch (tipo) {
             case MESA:
                 return "Mesa " + mesaNumero;
             case DELIVERY:
                 return "Delivery" + (clienteNome != null ? " - " + clienteNome : "");
+            case RETIRADA:
+                return (senha > 0 ? "Senha " + senha : "Retirada") + " | para viagem" + (nome != null ? " - " + nome : "");
             default:
-                String nome = identificacao != null && !identificacao.isEmpty() ? identificacao
-                        : clienteNome != null ? clienteNome : null;
-                return (senha > 0 ? "Senha " + senha : tipo.toString()) + (nome != null ? " - " + nome : "");
+                // Balcão: se o cliente está numa mesa, a mesa vem primeiro (é para onde levar).
+                String base = mesaNumero > 0 ? "Mesa " + mesaNumero + (senha > 0 ? " | Senha " + senha : "")
+                        : (senha > 0 ? "Senha " + senha : "Balcão");
+                return base + (nome != null ? " - " + nome : "");
         }
     }
 

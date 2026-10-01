@@ -15,7 +15,7 @@ public class MesaDAO {
     public List<Mesa> listarComStatus() throws SQLException {
         String sql = "SELECT m.*, p.id AS pedido_id, p.conta_solicitada, p.total, p.data_pedido "
                 + "FROM \"Mesa\" m "
-                + "LEFT JOIN \"Pedido\" p ON p.mesa_id = m.id AND p.situacao = 'ABERTO' "
+                + "LEFT JOIN \"Pedido\" p ON p.mesa_id = m.id AND p.situacao = 'ABERTO' AND p.tipo = 'MESA' "
                 + "WHERE m.ativa ORDER BY m.numero";
         List<Mesa> mesas = new ArrayList<>();
         try (Connection con = ConexaoBD.getConnection();

@@ -300,9 +300,13 @@ public class PedidoService {
     /**
      * Venda de balcão em uma única transação: abre o pedido com senha, lança
      * os itens (enviando à cozinha), recebe o pagamento e fecha.
+     *
+     * @param paraViagem true = cliente leva (vira retirada); false = consome no local
+     * @param mesaId mesa onde o cliente vai sentar (0 = chamar pela senha no balcão)
+     * @param nome nome para chamar o cliente (opcional)
      */
-    public Pedido vendaBalcao(List<Venda> itens, FormaPagamento forma, double recebido, int clienteId)
-            throws SQLException, EstoqueInsuficienteException {
+    public Pedido vendaBalcao(List<Venda> itens, FormaPagamento forma, double recebido, int clienteId,
+            boolean paraViagem, int mesaId, String nome) throws SQLException, EstoqueInsuficienteException {
         Sessao.exigir(Modulo.VENDA_BALCAO);
         if (forma == null) {
             throw new IllegalArgumentException("Escolha a forma de pagamento.");
@@ -312,8 +316,10 @@ public class PedidoService {
                 throw new IllegalStateException("Abra o caixa antes de registrar vendas.");
             }
             Pedido novo = new Pedido();
-            novo.setTipo(TipoPedido.BALCAO);
+            novo.setTipo(paraViagem ? TipoPedido.RETIRADA : TipoPedido.BALCAO);
             novo.setClienteId(clienteId);
+            novo.setMesaId(paraViagem ? 0 : mesaId);
+            novo.setIdentificacao(nome);
             int pedidoId = abrirEm(con, novo);
             lancarEm(con, pedidoId, itens);
             double total = pedidoDAO.buscar(con, pedidoId).getTotal();

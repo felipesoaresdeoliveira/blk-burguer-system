@@ -29,6 +29,49 @@ public class Vendas extends javax.swing.JFrame {
         }
     }
 
+    /** Mesas ativas para escolher onde entregar. */
+    private void carregarMesas() {
+        cmbMesa.removeAllItems();
+        try {
+            for (entidades.Mesa m : new dao.MesaDAO().listarComStatus()) {
+                cmbMesa.addItem(m);
+            }
+        } catch (Exception e) {
+            // Sem mesas carregadas, a venda ainda pode ser no balcão ou para viagem.
+        }
+    }
+
+    private boolean destinoMesa() {
+        return "Mesa".equals(cmbDestino.getSelectedItem());
+    }
+
+    private void atualizarDestino() {
+        cmbMesa.setVisible(destinoMesa());
+        cmbDestino.putClientProperty("JComponent.outline", null);
+        painelLinhaDestino.revalidate();
+    }
+
+    /** Texto do destino para o pagamento e a confirmação ("Mesa 4", "Balcão - senha", "Para viagem"). */
+    private String descricaoDestino() {
+        if (destinoMesa()) {
+            return String.valueOf(cmbMesa.getSelectedItem());
+        }
+        return cmbDestino.getSelectedIndex() == 3 ? "Para viagem" : "Balcão (chamar pela senha)";
+    }
+
+    /** O caixa precisa dizer onde o pedido será entregue antes de cobrar. */
+    private boolean destinoValido() {
+        if (cmbDestino.getSelectedIndex() <= 0 || (destinoMesa() && cmbMesa.getSelectedItem() == null)) {
+            cmbDestino.putClientProperty("JComponent.outline", "error");
+            cmbDestino.requestFocusInWindow();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Escolha onde o cliente vai receber o pedido: numa mesa, no balcão (pela senha) ou para viagem.",
+                    "Onde entregar?", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
     /** Abre a personalização do lanche (tirar, adicionais, observação). */
     private boolean personalizar(Produto produto, Venda item) {
         return DialogoPersonalizar.mostrar(this, produto, item, fichas, adicionais);
@@ -132,6 +175,10 @@ public class Vendas extends javax.swing.JFrame {
         lblTotal.setFont(lblTotal.getFont().deriveFont(java.awt.Font.BOLD, 16f));
         javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.GridLayout(0, 1, 0, 6));
         painel.add(lblTotal);
+        javax.swing.JLabel lblOnde = new javax.swing.JLabel("Entregar em: " + descricaoDestino());
+        lblOnde.setFont(lblOnde.getFont().deriveFont(java.awt.Font.BOLD, 14f));
+        lblOnde.setForeground(ui.Tema.DESTAQUE);
+        painel.add(lblOnde);
         painel.add(new javax.swing.JLabel("Forma de pagamento:"));
         painel.add(campoForma);
         painel.add(new javax.swing.JLabel("Valor recebido (dinheiro):"));
@@ -168,8 +215,14 @@ public class Vendas extends javax.swing.JFrame {
         ui.Tema.primario(BtnFinalizarVenda);
         ui.Tema.perigo(cancelarVenda);
         ui.Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelAdicionar,
-                painelLinhaItem, painelRodape, painelTotal, painelBotoesVenda);
+                painelLinhaItem, painelRodape, painelTotal, painelBotoesVenda, painelDestino, painelLinhaDestino,
+                painelItemBloco);
         TxtADDItem1.setForeground(ui.Tema.TEXTO);
+        lblDestinoTitulo.setForeground(ui.Tema.DESTAQUE);
+        txtNomeCliente.putClientProperty("JTextField.placeholderText", "para chamar o cliente");
+        cmbDestino.addActionListener(e -> atualizarDestino());
+        carregarMesas();
+        atualizarDestino();
         NumeroTotal1.setForeground(ui.Tema.DESTAQUE);
         BtnFinalizarVenda.setFont(BtnFinalizarVenda.getFont().deriveFont(java.awt.Font.BOLD, 16f));
         BtnFinalizarVenda.setPreferredSize(new java.awt.Dimension(200, 46));
@@ -191,6 +244,15 @@ public class Vendas extends javax.swing.JFrame {
         voltar = new javax.swing.JButton();
         painelCorpo = new javax.swing.JPanel();
         painelAdicionar = new javax.swing.JPanel();
+        painelDestino = new javax.swing.JPanel();
+        lblDestinoTitulo = new javax.swing.JLabel();
+        painelLinhaDestino = new javax.swing.JPanel();
+        lblDestino = new javax.swing.JLabel();
+        cmbDestino = new javax.swing.JComboBox<>();
+        cmbMesa = new javax.swing.JComboBox<>();
+        lblNomeCliente = new javax.swing.JLabel();
+        txtNomeCliente = new javax.swing.JTextField();
+        painelItemBloco = new javax.swing.JPanel();
         TxtADDItem1 = new javax.swing.JLabel();
         painelLinhaItem = new javax.swing.JPanel();
         TXTProduto1 = new javax.swing.JLabel();
@@ -220,7 +282,7 @@ public class Vendas extends javax.swing.JFrame {
         BLKBurguer1.setText("Nova venda");
         painelTitulo.add(BLKBurguer1);
 
-        lblSubtitulo.setText("Balcão: monte o pedido; os lanches vão para a cozinha ao finalizar");
+        lblSubtitulo.setText("Balcão: defina onde entregar, monte o pedido e receba");
         painelTitulo.add(lblSubtitulo);
 
         painelCabecalho.add(painelTitulo, java.awt.BorderLayout.LINE_START);
@@ -240,10 +302,37 @@ public class Vendas extends javax.swing.JFrame {
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
-        painelAdicionar.setLayout(new java.awt.BorderLayout(0, 8));
+        painelAdicionar.setLayout(new java.awt.BorderLayout(0, 14));
+        painelDestino.setLayout(new java.awt.BorderLayout(0, 6));
+        lblDestinoTitulo.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
+        lblDestinoTitulo.setText("1. Onde o cliente vai receber");
+        painelDestino.add(lblDestinoTitulo, java.awt.BorderLayout.PAGE_START);
+
+        painelLinhaDestino.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
+        lblDestino.setText("Entregar em:");
+        painelLinhaDestino.add(lblDestino);
+
+        cmbDestino.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Selecione...", "Mesa", "Balcão (chamar pela senha)", "Para viagem" }));
+        cmbDestino.setPreferredSize(new java.awt.Dimension(230, 34));
+        painelLinhaDestino.add(cmbDestino);
+
+        cmbMesa.setPreferredSize(new java.awt.Dimension(140, 34));
+        painelLinhaDestino.add(cmbMesa);
+
+        lblNomeCliente.setText("Nome do cliente (opcional):");
+        painelLinhaDestino.add(lblNomeCliente);
+
+        txtNomeCliente.setPreferredSize(new java.awt.Dimension(220, 34));
+        painelLinhaDestino.add(txtNomeCliente);
+
+        painelDestino.add(painelLinhaDestino, java.awt.BorderLayout.CENTER);
+
+        painelAdicionar.add(painelDestino, java.awt.BorderLayout.PAGE_START);
+
+        painelItemBloco.setLayout(new java.awt.BorderLayout(0, 6));
         TxtADDItem1.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
-        TxtADDItem1.setText("Adicionar item");
-        painelAdicionar.add(TxtADDItem1, java.awt.BorderLayout.PAGE_START);
+        TxtADDItem1.setText("2. Itens do pedido");
+        painelItemBloco.add(TxtADDItem1, java.awt.BorderLayout.PAGE_START);
 
         painelLinhaItem.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
         TXTProduto1.setText("Produto:");
@@ -266,7 +355,9 @@ public class Vendas extends javax.swing.JFrame {
         });
         painelLinhaItem.add(BtnAdd1);
 
-        painelAdicionar.add(painelLinhaItem, java.awt.BorderLayout.CENTER);
+        painelItemBloco.add(painelLinhaItem, java.awt.BorderLayout.CENTER);
+
+        painelAdicionar.add(painelItemBloco, java.awt.BorderLayout.CENTER);
 
         painelCorpo.add(painelAdicionar, java.awt.BorderLayout.PAGE_START);
 
@@ -326,6 +417,9 @@ public class Vendas extends javax.swing.JFrame {
             return;
         }
 
+        if (!destinoValido()) {
+            return;
+        }
         double total = service.VendaService.total(itensVenda);
         Object[] pagamento = escolherPagamento(total);
         if (pagamento == null) {
@@ -335,9 +429,14 @@ public class Vendas extends javax.swing.JFrame {
         double recebido = (Double) pagamento[1];
 
         try {
-            entidades.Pedido pedido = new service.VendaService().finalizarVenda(itensVenda, forma, recebido, (Integer) pagamento[2]);
-            String msg = String.format("Venda nº %d finalizada!%nSenha do cliente: %d%nPagamento: %s",
-                    pedido.getId(), pedido.getSenha(), forma);
+            boolean viagem = cmbDestino.getSelectedIndex() == 3;
+            int mesaId = destinoMesa() ? ((entidades.Mesa) cmbMesa.getSelectedItem()).getId() : 0;
+            entidades.Pedido pedido = new service.VendaService().finalizarVenda(itensVenda, forma, recebido,
+                    (Integer) pagamento[2], viagem, mesaId, txtNomeCliente.getText().trim());
+            String onde = destinoMesa() ? "Entregar na " + cmbMesa.getSelectedItem()
+                    : viagem ? "Para viagem: chamar pela senha" : "Consumo no local: chamar pela senha";
+            String msg = String.format("Venda nº %d finalizada!%n%s%nSenha do cliente: %d%nPagamento: %s",
+                    pedido.getId(), onde, pedido.getSenha(), forma);
             if (pedido.getItens().stream().anyMatch(v -> v.getStatusCozinha() != null)) {
                 msg += String.format("%nOs lanches foram enviados para a cozinha.");
             }
@@ -362,6 +461,8 @@ public class Vendas extends javax.swing.JFrame {
         atualizarTabela();
         carregarEstoque();
         SelectQnt1.setValue(1);
+        cmbDestino.setSelectedIndex(0);
+        txtNomeCliente.setText("");
     }//GEN-LAST:event_BtnFinalizarVendaActionPerformed
 
     private void BtnAdd1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnAdd1ActionPerformed
@@ -475,18 +576,27 @@ public class Vendas extends javax.swing.JFrame {
     private javax.swing.JLabel TxtQnt1;
     private javax.swing.JLabel TxtTotal1;
     private javax.swing.JButton cancelarVenda;
+    private javax.swing.JComboBox<String> cmbDestino;
+    private javax.swing.JComboBox<Object> cmbMesa;
     private javax.swing.JButton jButton1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JLabel lblDestino;
+    private javax.swing.JLabel lblDestinoTitulo;
+    private javax.swing.JLabel lblNomeCliente;
     private javax.swing.JLabel lblSubtitulo;
     private javax.swing.JPanel painelAcoesTopo;
     private javax.swing.JPanel painelAdicionar;
     private javax.swing.JPanel painelBotoesVenda;
     private javax.swing.JPanel painelCabecalho;
     private javax.swing.JPanel painelCorpo;
+    private javax.swing.JPanel painelDestino;
+    private javax.swing.JPanel painelItemBloco;
+    private javax.swing.JPanel painelLinhaDestino;
     private javax.swing.JPanel painelLinhaItem;
     private javax.swing.JPanel painelRodape;
     private javax.swing.JPanel painelTitulo;
     private javax.swing.JPanel painelTotal;
+    private javax.swing.JTextField txtNomeCliente;
     private javax.swing.JButton voltar;
     // End of variables declaration//GEN-END:variables
 }
