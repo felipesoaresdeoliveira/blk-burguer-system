@@ -94,6 +94,12 @@ public class GraficoColunas extends PainelCartao {
             }
         }
         colunas = new Rectangle[n];
+        // Em períodos longos, mostra só um rótulo a cada "passo" (contando a partir do último).
+        int maiorRotulo = 0;
+        for (String r : rotulos) {
+            maiorRotulo = Math.max(maiorRotulo, fm.stringWidth(r));
+        }
+        int passo = Math.max(1, (int) Math.ceil((maiorRotulo + 10) / banda));
         for (int i = 0; i < n; i++) {
             int cx = x0 + (int) Math.round(banda * i + banda / 2);
             int alt = (int) Math.round(alturaUtil * valores[i] / topo);
@@ -110,9 +116,11 @@ public class GraficoColunas extends PainelCartao {
             }
 
             // Rótulos do eixo x
-            g.setColor(destacado == i ? Tema.TEXTO : Tema.TEXTO_FRACO);
-            String r = rotulos[i];
-            g.drawString(r, cx - fm.stringWidth(r) / 2, yBase + fm.getAscent() + 5);
+            if ((n - 1 - i) % passo == 0 || destacado == i) {
+                g.setColor(destacado == i ? Tema.TEXTO : Tema.TEXTO_FRACO);
+                String r = rotulos[i];
+                g.drawString(r, cx - fm.stringWidth(r) / 2, yBase + fm.getAscent() + 5);
+            }
 
             // Rótulo de valor só no maior e no último (seletivo)
             if (i == iMax || i == n - 1) {

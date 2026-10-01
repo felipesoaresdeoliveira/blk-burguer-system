@@ -50,8 +50,7 @@ public class TelaUsuarios extends javax.swing.JFrame {
         });
         carregar();
         novo();
-        setSize(1180, 700);
-        setLocationRelativeTo(null);
+        Tema.tamanhoPadrao(this);
     }
 
     private void carregar() {

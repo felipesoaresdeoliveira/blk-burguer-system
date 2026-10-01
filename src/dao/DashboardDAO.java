@@ -31,6 +31,7 @@ public class DashboardDAO {
     public static class Resumo {
         public double faturamento;
         public int vendas;
+        public int itens;
 
         public double ticketMedio() {
             return vendas == 0 ? 0 : faturamento / vendas;
@@ -55,7 +56,7 @@ public class DashboardDAO {
 
     /** Faturamento e quantidade de vendas no período [de, ate]. */
     public Resumo resumo(LocalDate de, LocalDate ate) throws SQLException {
-        String sql = "SELECT COALESCE(SUM(v.total), 0), COUNT(DISTINCT " + CHAVE_VENDA + ") "
+        String sql = "SELECT COALESCE(SUM(v.total), 0), COUNT(DISTINCT " + CHAVE_VENDA + "), COALESCE(SUM(v.quantidade), 0) "
                 + VENDAS_PAGAS + "AND v.data_venda >= ? AND v.data_venda < ?";
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(sql)) {
@@ -66,6 +67,7 @@ public class DashboardDAO {
                 Resumo r = new Resumo();
                 r.faturamento = rs.getDouble(1);
                 r.vendas = rs.getInt(2);
+                r.itens = rs.getInt(3);
                 return r;
             }
         }

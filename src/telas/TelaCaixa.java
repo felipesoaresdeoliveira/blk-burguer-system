@@ -33,8 +33,7 @@ public class TelaCaixa extends javax.swing.JFrame {
         lblMov.setForeground(Tema.TEXTO);
         lblHist.setForeground(Tema.TEXTO);
         carregar();
-        setSize(1240, 720);
-        setLocationRelativeTo(null);
+        Tema.tamanhoPadrao(this);
     }
 
     private static Double lerValor(String texto) {

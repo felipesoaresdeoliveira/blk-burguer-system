@@ -105,7 +105,7 @@ public class VendaDAO {
         String sql = "SELECT p.id, p.data_pedido AS data, p.forma_pagamento, p.total, "
                 + "       string_agg(v.quantidade || 'x ' || v.produto, ', ' ORDER BY v.id) AS itens "
                 + "FROM \"Pedido\" p JOIN \"Venda\" v ON v.pedido_id = p.id "
-                + "WHERE p.data_pedido >= ? AND p.data_pedido < ? "
+                + "WHERE p.situacao = 'PAGO' AND p.data_pedido >= ? AND p.data_pedido < ? "
                 + "GROUP BY p.id "
                 + "UNION ALL "
                 + "SELECT -v.id, v.data_venda, NULL, v.total, v.quantidade || 'x ' || v.produto "

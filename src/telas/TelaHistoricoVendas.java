@@ -24,6 +24,11 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
         ui.Tema.janela(this);
         ui.Tema.titulo(lblTitulo);
         ui.Tema.primario(btnFiltrar);
+        ui.Tema.secundario(lblSubtitulo);
+        ui.Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelFiltro, painelItens);
+        lblItens.setForeground(ui.Tema.TEXTO);
+        lblResumo.setForeground(ui.Tema.TEXTO);
+        lblResumo.setBorder(javax.swing.BorderFactory.createEmptyBorder(6, 0, 0, 0));
         txtDataInicio.putClientProperty("JTextField.placeholderText", "dd/mm/aaaa");
         txtDataFim.putClientProperty("JTextField.placeholderText", "dd/mm/aaaa");
         tabelaVendas.getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
@@ -33,7 +38,7 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
             }
         });
         carregarVendas();
-        setLocationRelativeTo(null);
+        ui.Tema.tamanhoPadrao(this);
     }
 
     /** Converte o texto do filtro; vazio = sem limite. Lança exceção se inválido. */
@@ -128,7 +133,14 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        painelCabecalho = new javax.swing.JPanel();
+        painelTitulo = new javax.swing.JPanel();
         lblTitulo = new javax.swing.JLabel();
+        lblSubtitulo = new javax.swing.JLabel();
+        painelAcoesTopo = new javax.swing.JPanel();
+        btnVoltar = new javax.swing.JButton();
+        painelCorpo = new javax.swing.JPanel();
+        painelFiltro = new javax.swing.JPanel();
         lblDe = new javax.swing.JLabel();
         txtDataInicio = new javax.swing.JTextField();
         lblAte = new javax.swing.JLabel();
@@ -137,25 +149,57 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
         btnLimpar = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         tabelaVendas = new javax.swing.JTable();
+        painelItens = new javax.swing.JPanel();
         lblItens = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         tabelaItens = new javax.swing.JTable();
         lblResumo = new javax.swing.JLabel();
-        btnVoltar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("BLK Burguer - Histórico de vendas");
+        setMinimumSize(new java.awt.Dimension(1180, 720));
 
-        lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        lblTitulo.setText("BLK BURGUER - Histórico de vendas");
+        painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
+        painelCabecalho.setLayout(new java.awt.BorderLayout());
+        painelTitulo.setLayout(new java.awt.GridLayout(2, 1, 0, 2));
+        lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 22)); // NOI18N
+        lblTitulo.setText("Histórico de vendas");
+        painelTitulo.add(lblTitulo);
 
+        lblSubtitulo.setText("Vendas finalizadas, com os itens e a forma de pagamento");
+        painelTitulo.add(lblSubtitulo);
+
+        painelCabecalho.add(painelTitulo, java.awt.BorderLayout.LINE_START);
+
+        painelAcoesTopo.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 8));
+        btnVoltar.setText("Voltar");
+        btnVoltar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnVoltarActionPerformed(evt);
+            }
+        });
+        painelAcoesTopo.add(btnVoltar);
+
+        painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
+
+        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+
+        painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
+        painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
+        painelFiltro.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
         lblDe.setText("De:");
+        painelFiltro.add(lblDe);
 
+        txtDataInicio.setPreferredSize(new java.awt.Dimension(120, 30));
         txtDataInicio.setToolTipText("Data inicial no formato dd/mm/aaaa (vazio = sem limite)");
+        painelFiltro.add(txtDataInicio);
 
         lblAte.setText("Até:");
+        painelFiltro.add(lblAte);
 
+        txtDataFim.setPreferredSize(new java.awt.Dimension(120, 30));
         txtDataFim.setToolTipText("Data final no formato dd/mm/aaaa (vazio = sem limite)");
+        painelFiltro.add(txtDataFim);
 
         btnFiltrar.setText("Filtrar");
         btnFiltrar.addActionListener(new java.awt.event.ActionListener() {
@@ -163,6 +207,7 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
                 btnFiltrarActionPerformed(evt);
             }
         });
+        painelFiltro.add(btnFiltrar);
 
         btnLimpar.setText("Limpar");
         btnLimpar.addActionListener(new java.awt.event.ActionListener() {
@@ -170,81 +215,33 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
                 btnLimparActionPerformed(evt);
             }
         });
+        painelFiltro.add(btnLimpar);
+
+        painelCorpo.add(painelFiltro, java.awt.BorderLayout.PAGE_START);
 
         jScrollPane1.setViewportView(tabelaVendas);
+        painelCorpo.add(jScrollPane1, java.awt.BorderLayout.CENTER);
 
-        lblItens.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        painelItens.setLayout(new java.awt.BorderLayout(0, 8));
+        lblItens.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblItens.setText("Itens da venda selecionada");
+        painelItens.add(lblItens, java.awt.BorderLayout.PAGE_START);
 
+        jScrollPane2.setPreferredSize(new java.awt.Dimension(0, 190));
         jScrollPane2.setViewportView(tabelaItens);
+        painelItens.add(jScrollPane2, java.awt.BorderLayout.CENTER);
 
-        lblResumo.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        lblResumo.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblResumo.setText("0 vendas");
+        painelItens.add(lblResumo, java.awt.BorderLayout.PAGE_END);
 
-        btnVoltar.setText("Voltar");
-        btnVoltar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnVoltarActionPerformed(evt);
-            }
-        });
+        painelCorpo.add(painelItens, java.awt.BorderLayout.PAGE_END);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(lblTitulo)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(lblDe)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtDataInicio, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(lblAte)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtDataFim, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(btnFiltrar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnLimpar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 760, Short.MAX_VALUE)
-                    .addComponent(lblItens)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 760, Short.MAX_VALUE)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(lblResumo)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(btnVoltar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap())
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(lblTitulo)
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblDe)
-                    .addComponent(txtDataInicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(lblAte)
-                    .addComponent(txtDataFim, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnFiltrar)
-                    .addComponent(btnLimpar))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 230, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(lblItens)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblResumo)
-                    .addComponent(btnVoltar, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap())
-        );
+        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
 
     private void btnFiltrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFiltrarActionPerformed
         carregarVendas();
@@ -274,7 +271,14 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
     private javax.swing.JLabel lblDe;
     private javax.swing.JLabel lblItens;
     private javax.swing.JLabel lblResumo;
+    private javax.swing.JLabel lblSubtitulo;
     private javax.swing.JLabel lblTitulo;
+    private javax.swing.JPanel painelAcoesTopo;
+    private javax.swing.JPanel painelCabecalho;
+    private javax.swing.JPanel painelCorpo;
+    private javax.swing.JPanel painelFiltro;
+    private javax.swing.JPanel painelItens;
+    private javax.swing.JPanel painelTitulo;
     private javax.swing.JTable tabelaItens;
     private javax.swing.JTable tabelaVendas;
     private javax.swing.JTextField txtDataFim;

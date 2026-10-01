@@ -121,6 +121,29 @@ public final class Tema {
         janela.setBackground(FUNDO);
     }
 
+    /** Tamanho padrão das telas do sistema (o mesmo do dashboard), centralizada. */
+    public static void tamanhoPadrao(javax.swing.JFrame tela) {
+        tela.setMinimumSize(new java.awt.Dimension(1180, 720));
+        tela.setSize(1280, 800);
+        tela.setLocationRelativeTo(null);
+        tela.getContentPane().setBackground(FUNDO);
+    }
+
+    /** Cartão com borda (formulários e blocos laterais). */
+    public static void cartao(javax.swing.JPanel painel) {
+        painel.setBackground(CARTAO);
+        painel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                javax.swing.BorderFactory.createLineBorder(BORDA),
+                javax.swing.BorderFactory.createEmptyBorder(16, 18, 18, 18)));
+    }
+
+    /** Deixa painéis de layout sem fundo próprio (herdam o fundo da tela ou do cartão). */
+    public static void transparente(javax.swing.JComponent... paineis) {
+        for (javax.swing.JComponent p : paineis) {
+            p.setOpaque(false);
+        }
+    }
+
     /** Título de tela em destaque. */
     public static void titulo(JLabel... titulos) {
         for (JLabel t : titulos) {
