@@ -14,6 +14,8 @@ public enum Modulo {
     ESTOQUE("Estoque"),
     RELATORIOS("Relatórios"),
     USUARIOS("Usuários"),
+    /** Cadastros gerais da operação: mesas, taxa de entrega. */
+    CADASTROS("Cadastros gerais"),
     /** Ações sensíveis: cancelar pedido, excluir cadastros. */
     CANCELAMENTOS("Cancelamentos");
 

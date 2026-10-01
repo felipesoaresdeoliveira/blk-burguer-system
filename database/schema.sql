@@ -188,6 +188,13 @@ CREATE TABLE IF NOT EXISTS "Adicional" (
 ALTER TABLE "Venda" ADD COLUMN IF NOT EXISTS remocoes VARCHAR(255);
 ALTER TABLE "Venda" ADD COLUMN IF NOT EXISTS adicionais VARCHAR(255);
 
+-- Configurações gerais (chave/valor), ex.: taxa fixa de entrega (#35)
+CREATE TABLE IF NOT EXISTS "Configuracao" (
+    chave VARCHAR(60) PRIMARY KEY,
+    valor VARCHAR(255) NOT NULL
+);
+INSERT INTO "Configuracao" (chave, valor) VALUES ('taxa_entrega', '7.00') ON CONFLICT (chave) DO NOTHING;
+
 -- Crie o primeiro usuário manualmente antes de abrir o sistema.
 -- Exemplo apenas para ambiente local de desenvolvimento:
 -- INSERT INTO "Login" (usuario, senha) VALUES ('admin', 'troque-esta-senha');

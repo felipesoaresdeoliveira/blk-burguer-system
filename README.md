@@ -72,7 +72,7 @@ O primeiro usuário cadastrado direto no banco vira **Administrador**. Pelo sist
 
 - **Administrador** (o chefe): acesso total, cria e gerencia contas.
 - **Gerente**: gerencia a operação, tudo exceto criar contas.
-- **Caixa**: balcão (vender e receber), abrir e fechar o caixa, histórico.
+- **Caixa**: entra direto na tela do Caixa; vende no balcão, anota mesas/retirada/delivery, recebe (inclusive dividido), abre e fecha o caixa.
 - **Garçom**: mesas, comandas e pedidos.
 - **Cozinha**: abre direto o painel de produção (feito para a TV da cozinha).
 
@@ -81,6 +81,8 @@ As senhas são guardadas com hash PBKDF2; senhas antigas em texto são convertid
 ## Vários computadores
 
 Caixa, TV da cozinha e gerência podem rodar em computadores diferentes usando o mesmo banco. O passo a passo (liberar o PostgreSQL na rede, gerar o pacote com `ant jar` e configurar cada máquina) está em [docs/rede.md](docs/rede.md).
+
+O app do garçom pelo celular (rede local, sem depender de internet) está planejado em [docs/app-garcom.md](docs/app-garcom.md).
 
 ## Visual e dashboard
 

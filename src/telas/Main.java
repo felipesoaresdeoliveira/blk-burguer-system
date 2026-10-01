@@ -72,7 +72,8 @@ public class Main extends javax.swing.JFrame {
     /** Esconde do menu o que o perfil não acessa; sem dashboard, mostra atalhos. */
     private void aplicarPermissoes() {
         Object[][] itens = {
-            {btnVisaoGeral, Modulo.DASHBOARD}, {btnCaixa, Modulo.CAIXA},
+            {btnVisaoGeral, Modulo.DASHBOARD}, {btnCaixa, Modulo.CAIXA}, {btnMesas, Modulo.MESAS},
+            {btnPedidos, Modulo.PEDIDOS}, {btnClientes, Modulo.CLIENTES},
             {btnCozinha, Modulo.COZINHA}, {btnHistorico, Modulo.HISTORICO}, {btnProdutos, Modulo.PRODUTOS},
             {btnEstoque, Modulo.ESTOQUE}, {btnRelatorio, Modulo.RELATORIOS}, {btnUsuarios, Modulo.USUARIOS}};
         java.util.List<javax.swing.JButton> atalhos = new java.util.ArrayList<>();
@@ -142,7 +143,7 @@ public class Main extends javax.swing.JFrame {
         Tema.secundario(lblSlogan, lblData);
         lblTitulo.setForeground(Tema.TEXTO);
 
-        for (javax.swing.JButton b : new javax.swing.JButton[]{btnVisaoGeral, btnCaixa, btnCozinha,
+        for (javax.swing.JButton b : new javax.swing.JButton[]{btnVisaoGeral, btnCaixa, btnMesas, btnPedidos, btnClientes, btnCozinha,
             btnHistorico, btnProdutos, btnEstoque, btnRelatorio, btnUsuarios, btnSair}) {
             b.putClientProperty("JButton.buttonType", "toolBarButton");
             b.putClientProperty("FlatLaf.style", "margin: 9,12,9,12; font: +1; hoverBackground: #1F1F1E");
@@ -335,6 +336,9 @@ public class Main extends javax.swing.JFrame {
         painelBotoes = new javax.swing.JPanel();
         btnVisaoGeral = new javax.swing.JButton();
         btnCaixa = new javax.swing.JButton();
+        btnMesas = new javax.swing.JButton();
+        btnPedidos = new javax.swing.JButton();
+        btnClientes = new javax.swing.JButton();
         btnCozinha = new javax.swing.JButton();
         btnHistorico = new javax.swing.JButton();
         btnProdutos = new javax.swing.JButton();
@@ -400,6 +404,33 @@ public class Main extends javax.swing.JFrame {
             }
         });
         painelBotoes.add(btnCaixa);
+
+        btnMesas.setText("Mesas");
+        btnMesas.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnMesas.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMesasActionPerformed(evt);
+            }
+        });
+        painelBotoes.add(btnMesas);
+
+        btnPedidos.setText("Pedidos");
+        btnPedidos.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnPedidos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPedidosActionPerformed(evt);
+            }
+        });
+        painelBotoes.add(btnPedidos);
+
+        btnClientes.setText("Clientes");
+        btnClientes.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnClientes.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnClientesActionPerformed(evt);
+            }
+        });
+        painelBotoes.add(btnClientes);
 
         btnCozinha.setText("Cozinha");
         btnCozinha.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
@@ -576,6 +607,18 @@ public class Main extends javax.swing.JFrame {
         abrirSePuder(Modulo.CAIXA, TelaCaixa::new);
     }//GEN-LAST:event_btnCaixaActionPerformed
 
+    private void btnMesasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMesasActionPerformed
+        abrirSePuder(Modulo.MESAS, TelaMesas::new);
+    }//GEN-LAST:event_btnMesasActionPerformed
+
+    private void btnPedidosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPedidosActionPerformed
+        abrirSePuder(Modulo.PEDIDOS, TelaPedidos::new);
+    }//GEN-LAST:event_btnPedidosActionPerformed
+
+    private void btnClientesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClientesActionPerformed
+        abrirSePuder(Modulo.CLIENTES, TelaClientes::new);
+    }//GEN-LAST:event_btnClientesActionPerformed
+
     private void btnCozinhaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCozinhaActionPerformed
         abrirSePuder(Modulo.COZINHA, TelaCozinha::new);
     }//GEN-LAST:event_btnCozinhaActionPerformed
@@ -597,9 +640,12 @@ public class Main extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAtualizar;
     private javax.swing.JButton btnCaixa;
+    private javax.swing.JButton btnClientes;
     private javax.swing.JButton btnCozinha;
     private javax.swing.JButton btnEstoque;
     private javax.swing.JButton btnHistorico;
+    private javax.swing.JButton btnMesas;
+    private javax.swing.JButton btnPedidos;
     private javax.swing.JButton btnProdutos;
     private javax.swing.JButton btnRelatorio;
     private javax.swing.JButton btnSair;
