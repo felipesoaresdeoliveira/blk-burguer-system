@@ -1,34 +1,80 @@
 package telas;
 
-import entidades.Estoque;
+import entidades.Adicional;
+import entidades.Produto;
 import entidades.Venda;
+import java.util.Map;
 
 public class Vendas extends javax.swing.JFrame {
 
     private java.util.List<Venda> itensVenda = new java.util.ArrayList<>();
-    private java.util.List<Estoque> listaEstoque = new java.util.ArrayList<>();
+    private java.util.List<Produto> produtos = new java.util.ArrayList<>();
+    private Map<String, Map<String, Integer>> fichas = new java.util.HashMap<>();
+    private Map<String, Adicional> adicionais = new java.util.LinkedHashMap<>();
+    private final service.PedidoService pedidoService = new service.PedidoService();
 
-    private java.sql.Connection getConnection() throws Exception {
-        Class.forName("org.postgresql.Driver");
-        return java.sql.DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432/BLKburguer", "postgres", "2627");
-    }
-
+    /** Carrega o cardápio, as fichas técnicas (para "tirar ingrediente") e os adicionais. */
     private void carregarEstoque() {
-        listaEstoque.clear();
+        produtos.clear();
         DropItemEstoque1.removeAllItems();
-        try (java.sql.Connection con = getConnection(); java.sql.Statement stm = con.createStatement(); java.sql.ResultSet rs = stm.executeQuery("SELECT * FROM \"Produto\"")) {
-            while (rs.next()) {
-                entidades.Estoque e = new entidades.Estoque();
-                e.setNome(rs.getString("nome"));
-                e.setPreco(rs.getDouble("preco"));
-                listaEstoque.add(e);
-                DropItemEstoque1.addItem(e.getNome() + " - R$ "
-                        + String.format("%.2f", e.getPreco()));
+        try {
+            produtos = new dao.ProdutoDAO().listar();
+            fichas = pedidoService.fichasTecnicas();
+            adicionais = pedidoService.adicionais();
+            for (Produto p : produtos) {
+                DropItemEstoque1.addItem(p.getNome() + " - R$ " + String.format("%.2f", p.getPreco()));
             }
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
         }
+    }
+
+    /** Mesas ativas para escolher onde entregar. */
+    private void carregarMesas() {
+        cmbMesa.removeAllItems();
+        try {
+            for (entidades.Mesa m : new dao.MesaDAO().listarComStatus()) {
+                cmbMesa.addItem(m);
+            }
+        } catch (Exception e) {
+            // Sem mesas carregadas, a venda ainda pode ser no balcão ou para viagem.
+        }
+    }
+
+    private boolean destinoMesa() {
+        return "Mesa".equals(cmbDestino.getSelectedItem());
+    }
+
+    private void atualizarDestino() {
+        cmbMesa.setVisible(destinoMesa());
+        cmbDestino.putClientProperty("JComponent.outline", null);
+        painelLinhaDestino.revalidate();
+    }
+
+    /** Texto do destino para o pagamento e a confirmação ("Mesa 4", "Balcão - senha", "Para viagem"). */
+    private String descricaoDestino() {
+        if (destinoMesa()) {
+            return String.valueOf(cmbMesa.getSelectedItem());
+        }
+        return cmbDestino.getSelectedIndex() == 3 ? "Para viagem" : "Balcão (chamar pela senha)";
+    }
+
+    /** O caixa precisa dizer onde o pedido será entregue antes de cobrar. */
+    private boolean destinoValido() {
+        if (cmbDestino.getSelectedIndex() <= 0 || (destinoMesa() && cmbMesa.getSelectedItem() == null)) {
+            cmbDestino.putClientProperty("JComponent.outline", "error");
+            cmbDestino.requestFocusInWindow();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Escolha onde o cliente vai receber o pedido: numa mesa, no balcão (pela senha) ou para viagem.",
+                    "Onde entregar?", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    /** Abre a personalização do lanche (tirar, adicionais, observação). */
+    private boolean personalizar(Produto produto, Venda item) {
+        return DialogoPersonalizar.mostrar(this, produto, item, fichas, adicionais);
     }
 
     private void atualizarTabela() {
@@ -44,65 +90,262 @@ public class Vendas extends javax.swing.JFrame {
             double sub = v.getValor() * v.getQuantidade();
             totalGeral += sub;
             modelo.addRow(new Object[]{
-                v.getProduto(), v.getQuantidade(),
+                v.isPersonalizado() ? v.getProduto() + "  (" + v.getResumoPersonalizacao() + ")" : v.getProduto(),
+                v.getQuantidade(),
                 String.format("R$ %.2f", v.getValor()),
                 String.format("R$ %.2f", sub)
             });
         }
         TableItensVenda1.setModel(modelo);
+        TableItensVenda1.getColumnModel().getColumn(0).setPreferredWidth(620);
+        TableItensVenda1.getColumnModel().getColumn(1).setPreferredWidth(60);
         NumeroTotal1.setText(String.format("R$ %.2f", totalGeral));
+    }
+
+    /** Lê valor em reais aceitando vírgula ou ponto; null se inválido. */
+    private static Double lerValor(String texto) {
+        try {
+            return Double.valueOf(texto.trim().replace(',', '.'));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Janela de pagamento: forma de pagamento e, em dinheiro, valor recebido
+     * com o troco calculado na hora. Retorna {forma, valorRecebido} ou null se
+     * o usuário cancelar.
+     */
+    private static int clienteSelecionado(javax.swing.JComboBox<Object> combo) {
+        Object c = combo.getSelectedItem();
+        return c instanceof entidades.Cliente ? ((entidades.Cliente) c).getId() : 0;
+    }
+
+    private Object[] escolherPagamento(double total) {
+        javax.swing.JComboBox<entidades.FormaPagamento> campoForma
+                = new javax.swing.JComboBox<>(entidades.FormaPagamento.values());
+        javax.swing.JTextField campoRecebido = new javax.swing.JTextField(10);
+        javax.swing.JLabel lblTroco = new javax.swing.JLabel();
+        lblTroco.setFont(lblTroco.getFont().deriveFont(java.awt.Font.BOLD, 14f));
+        javax.swing.JComboBox<Object> campoCliente = new javax.swing.JComboBox<>();
+        campoCliente.addItem("Sem cliente");
+        try {
+            for (entidades.Cliente c : new dao.ClienteDAO().listar("")) {
+                campoCliente.addItem(c);
+            }
+        } catch (Exception e) {
+            // Sem clientes carregados: a venda segue sem cliente.
+        }
+
+        Runnable atualizar = () -> {
+            boolean dinheiro = campoForma.getSelectedItem() == entidades.FormaPagamento.DINHEIRO;
+            campoRecebido.setEnabled(dinheiro);
+            if (!dinheiro) {
+                lblTroco.setText("Troco: R$ 0,00");
+                lblTroco.setForeground(ui.Tema.SUCESSO);
+                return;
+            }
+            Double recebido = lerValor(campoRecebido.getText());
+            double troco = recebido == null ? -total : service.VendaService.troco(total, recebido);
+            if (troco < 0) {
+                lblTroco.setText(String.format("Faltam: R$ %.2f", -troco));
+                lblTroco.setForeground(ui.Tema.PERIGO);
+            } else {
+                lblTroco.setText(String.format("Troco: R$ %.2f", troco));
+                lblTroco.setForeground(ui.Tema.SUCESSO);
+            }
+        };
+        campoForma.addActionListener(e -> atualizar.run());
+        campoRecebido.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                atualizar.run();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                atualizar.run();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                atualizar.run();
+            }
+        });
+        atualizar.run();
+
+        javax.swing.JLabel lblTotal = new javax.swing.JLabel(String.format("Total: R$ %.2f", total));
+        lblTotal.setFont(lblTotal.getFont().deriveFont(java.awt.Font.BOLD, 16f));
+        javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.GridLayout(0, 1, 0, 6));
+        painel.add(lblTotal);
+        javax.swing.JLabel lblOnde = new javax.swing.JLabel("Entregar em: " + descricaoDestino());
+        lblOnde.setFont(lblOnde.getFont().deriveFont(java.awt.Font.BOLD, 14f));
+        lblOnde.setForeground(ui.Tema.DESTAQUE);
+        painel.add(lblOnde);
+        painel.add(new javax.swing.JLabel("Forma de pagamento:"));
+        painel.add(campoForma);
+        painel.add(new javax.swing.JLabel("Valor recebido (dinheiro):"));
+        painel.add(campoRecebido);
+        painel.add(lblTroco);
+        painel.add(new javax.swing.JLabel("Cliente (opcional):"));
+        painel.add(campoCliente);
+
+        while (true) {
+            int opcao = javax.swing.JOptionPane.showConfirmDialog(this, painel, "Finalizar venda",
+                    javax.swing.JOptionPane.OK_CANCEL_OPTION, javax.swing.JOptionPane.PLAIN_MESSAGE);
+            if (opcao != javax.swing.JOptionPane.OK_OPTION) {
+                return null;
+            }
+            entidades.FormaPagamento forma = (entidades.FormaPagamento) campoForma.getSelectedItem();
+            if (forma != entidades.FormaPagamento.DINHEIRO) {
+                return new Object[]{forma, total, clienteSelecionado(campoCliente)};
+            }
+            Double recebido = lerValor(campoRecebido.getText());
+            if (recebido != null && service.VendaService.troco(total, recebido) >= 0) {
+                return new Object[]{forma, recebido, clienteSelecionado(campoCliente)};
+            }
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Informe um valor recebido igual ou maior que o total.",
+                    "Valor recebido", javax.swing.JOptionPane.WARNING_MESSAGE);
+        }
     }
 
     public Vendas() {
         initComponents();
+        ui.Tema.janela(this);
+        ui.Tema.titulo(BLKBurguer1);
+        ui.Tema.secundario(lblSubtitulo);
+        ui.Tema.primario(BtnFinalizarVenda);
+        ui.Tema.perigo(cancelarVenda);
+        ui.Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelAdicionar,
+                painelLinhaItem, painelRodape, painelTotal, painelBotoesVenda, painelDestino, painelLinhaDestino,
+                painelItemBloco);
+        TxtADDItem1.setForeground(ui.Tema.TEXTO);
+        lblDestinoTitulo.setForeground(ui.Tema.DESTAQUE);
+        txtNomeCliente.putClientProperty("JTextField.placeholderText", "para chamar o cliente");
+        cmbDestino.addActionListener(e -> atualizarDestino());
+        carregarMesas();
+        atualizarDestino();
+        NumeroTotal1.setForeground(ui.Tema.DESTAQUE);
+        BtnFinalizarVenda.setFont(BtnFinalizarVenda.getFont().deriveFont(java.awt.Font.BOLD, 16f));
+        BtnFinalizarVenda.setPreferredSize(new java.awt.Dimension(200, 46));
+        SelectQnt1.setModel(new javax.swing.SpinnerNumberModel(1, 1, 999, 1));
         carregarEstoque();
         atualizarTabela();
-        setLocationRelativeTo(null);
+        ui.Tema.tamanhoPadrao(this);
     }
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        painelCabecalho = new javax.swing.JPanel();
+        painelTitulo = new javax.swing.JPanel();
+        BLKBurguer1 = new javax.swing.JLabel();
+        lblSubtitulo = new javax.swing.JLabel();
+        painelAcoesTopo = new javax.swing.JPanel();
+        voltar = new javax.swing.JButton();
+        painelCorpo = new javax.swing.JPanel();
+        painelAdicionar = new javax.swing.JPanel();
+        painelDestino = new javax.swing.JPanel();
+        lblDestinoTitulo = new javax.swing.JLabel();
+        painelLinhaDestino = new javax.swing.JPanel();
+        lblDestino = new javax.swing.JLabel();
+        cmbDestino = new javax.swing.JComboBox<>();
+        cmbMesa = new javax.swing.JComboBox<>();
+        lblNomeCliente = new javax.swing.JLabel();
+        txtNomeCliente = new javax.swing.JTextField();
+        painelItemBloco = new javax.swing.JPanel();
         TxtADDItem1 = new javax.swing.JLabel();
-        DropItemEstoque1 = new javax.swing.JComboBox<>();
+        painelLinhaItem = new javax.swing.JPanel();
         TXTProduto1 = new javax.swing.JLabel();
+        DropItemEstoque1 = new javax.swing.JComboBox<>();
         TxtQnt1 = new javax.swing.JLabel();
         SelectQnt1 = new javax.swing.JSpinner();
+        BtnAdd1 = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         TableItensVenda1 = new javax.swing.JTable();
-        BtnAdd1 = new javax.swing.JButton();
-        BtnFinalizarVenda = new javax.swing.JButton();
+        painelRodape = new javax.swing.JPanel();
+        painelTotal = new javax.swing.JPanel();
         TxtTotal1 = new javax.swing.JLabel();
-        BLKBurguer1 = new javax.swing.JLabel();
         NumeroTotal1 = new javax.swing.JLabel();
-        cancelarVenda = new javax.swing.JButton();
-        voltar = new javax.swing.JButton();
+        painelBotoesVenda = new javax.swing.JPanel();
         jButton1 = new javax.swing.JButton();
+        cancelarVenda = new javax.swing.JButton();
+        BtnFinalizarVenda = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("BLK Burguer - Nova venda");
+        setMinimumSize(new java.awt.Dimension(1180, 720));
 
-        TxtADDItem1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        TxtADDItem1.setText("Adicionar item do estoque");
+        painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
+        painelCabecalho.setLayout(new java.awt.BorderLayout());
+        painelTitulo.setLayout(new java.awt.GridLayout(2, 1, 0, 2));
+        BLKBurguer1.setFont(new java.awt.Font("Segoe UI", 1, 22)); // NOI18N
+        BLKBurguer1.setText("Nova venda");
+        painelTitulo.add(BLKBurguer1);
 
-        DropItemEstoque1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        lblSubtitulo.setText("Balcão: defina onde entregar, monte o pedido e receba");
+        painelTitulo.add(lblSubtitulo);
 
-        TXTProduto1.setText("Produto: ");
+        painelCabecalho.add(painelTitulo, java.awt.BorderLayout.LINE_START);
 
-        TxtQnt1.setText("Qnt: ");
-
-        TableItensVenda1.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Produto", "Qnt", "Preço unit.", "Subtotal"
+        painelAcoesTopo.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 8));
+        voltar.setText("Voltar ao caixa");
+        voltar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                voltarActionPerformed(evt);
             }
-        ));
-        jScrollPane2.setViewportView(TableItensVenda1);
+        });
+        painelAcoesTopo.add(voltar);
+
+        painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
+
+        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+
+        painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
+        painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
+        painelAdicionar.setLayout(new java.awt.BorderLayout(0, 14));
+        painelDestino.setLayout(new java.awt.BorderLayout(0, 6));
+        lblDestinoTitulo.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
+        lblDestinoTitulo.setText("1. Onde o cliente vai receber");
+        painelDestino.add(lblDestinoTitulo, java.awt.BorderLayout.PAGE_START);
+
+        painelLinhaDestino.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
+        lblDestino.setText("Entregar em:");
+        painelLinhaDestino.add(lblDestino);
+
+        cmbDestino.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Selecione...", "Mesa", "Balcão (chamar pela senha)", "Para viagem" }));
+        cmbDestino.setPreferredSize(new java.awt.Dimension(230, 34));
+        painelLinhaDestino.add(cmbDestino);
+
+        cmbMesa.setPreferredSize(new java.awt.Dimension(140, 34));
+        painelLinhaDestino.add(cmbMesa);
+
+        lblNomeCliente.setText("Nome do cliente (opcional):");
+        painelLinhaDestino.add(lblNomeCliente);
+
+        txtNomeCliente.setPreferredSize(new java.awt.Dimension(220, 34));
+        painelLinhaDestino.add(txtNomeCliente);
+
+        painelDestino.add(painelLinhaDestino, java.awt.BorderLayout.CENTER);
+
+        painelAdicionar.add(painelDestino, java.awt.BorderLayout.PAGE_START);
+
+        painelItemBloco.setLayout(new java.awt.BorderLayout(0, 6));
+        TxtADDItem1.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
+        TxtADDItem1.setText("2. Itens do pedido");
+        painelItemBloco.add(TxtADDItem1, java.awt.BorderLayout.PAGE_START);
+
+        painelLinhaItem.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
+        TXTProduto1.setText("Produto:");
+        painelLinhaItem.add(TXTProduto1);
+
+        DropItemEstoque1.setPreferredSize(new java.awt.Dimension(420, 34));
+        painelLinhaItem.add(DropItemEstoque1);
+
+        TxtQnt1.setText("Qtd:");
+        painelLinhaItem.add(TxtQnt1);
+
+        SelectQnt1.setPreferredSize(new java.awt.Dimension(80, 34));
+        painelLinhaItem.add(SelectQnt1);
 
         BtnAdd1.setText("Adicionar");
         BtnAdd1.addActionListener(new java.awt.event.ActionListener() {
@@ -110,120 +353,63 @@ public class Vendas extends javax.swing.JFrame {
                 BtnAdd1ActionPerformed(evt);
             }
         });
+        painelLinhaItem.add(BtnAdd1);
 
-        BtnFinalizarVenda.setText("Finalizar Venda");
-        BtnFinalizarVenda.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                BtnFinalizarVendaActionPerformed(evt);
-            }
-        });
+        painelItemBloco.add(painelLinhaItem, java.awt.BorderLayout.CENTER);
 
-        TxtTotal1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        TxtTotal1.setText("Total:  R$");
+        painelAdicionar.add(painelItemBloco, java.awt.BorderLayout.CENTER);
 
-        BLKBurguer1.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        BLKBurguer1.setText("BLK BURGUER - Vendas");
+        painelCorpo.add(painelAdicionar, java.awt.BorderLayout.PAGE_START);
 
-        NumeroTotal1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        NumeroTotal1.setForeground(new java.awt.Color(0, 204, 0));
-        NumeroTotal1.setText("0");
+        jScrollPane2.setViewportView(TableItensVenda1);
+        painelCorpo.add(jScrollPane2, java.awt.BorderLayout.CENTER);
 
-        cancelarVenda.setText("Cancelar Venda");
-        cancelarVenda.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cancelarVendaActionPerformed(evt);
-            }
-        });
+        painelRodape.setLayout(new java.awt.BorderLayout());
+        painelTotal.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
+        TxtTotal1.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        TxtTotal1.setText("Total:");
+        painelTotal.add(TxtTotal1);
 
-        voltar.setText("Voltar");
-        voltar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                voltarActionPerformed(evt);
-            }
-        });
+        NumeroTotal1.setFont(new java.awt.Font("Segoe UI", 1, 30)); // NOI18N
+        NumeroTotal1.setText("R$ 0,00");
+        painelTotal.add(NumeroTotal1);
 
-        jButton1.setText("Remover Item");
+        painelRodape.add(painelTotal, java.awt.BorderLayout.LINE_START);
+
+        painelBotoesVenda.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 10, 0));
+        jButton1.setText("Remover item");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
             }
         });
+        painelBotoesVenda.add(jButton1);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(50, 50, 50)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addGap(0, 0, Short.MAX_VALUE)
-                                        .addComponent(BLKBurguer1))
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addComponent(TXTProduto1)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(DropItemEstoque1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(TxtQnt1)))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(SelectQnt1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(BtnAdd1, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(50, 50, 50))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(TxtADDItem1)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(TxtTotal1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(NumeroTotal1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 102, Short.MAX_VALUE)
-                        .addComponent(jButton1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(cancelarVenda)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(BtnFinalizarVenda)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(voltar)
-                        .addGap(56, 56, 56))))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(28, Short.MAX_VALUE)
-                .addComponent(BLKBurguer1, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(TxtADDItem1, javax.swing.GroupLayout.PREFERRED_SIZE, 14, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(TxtQnt1, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(SelectQnt1, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(BtnAdd1, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(DropItemEstoque1, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(TXTProduto1)))
-                .addGap(60, 60, 60)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 231, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(TxtTotal1)
-                        .addComponent(NumeroTotal1))
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(cancelarVenda, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(BtnFinalizarVenda, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(voltar, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(51, 51, 51))
-        );
+        cancelarVenda.setText("Cancelar venda");
+        cancelarVenda.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cancelarVendaActionPerformed(evt);
+            }
+        });
+        painelBotoesVenda.add(cancelarVenda);
+
+        BtnFinalizarVenda.setText("Finalizar venda");
+        BtnFinalizarVenda.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BtnFinalizarVendaActionPerformed(evt);
+            }
+        });
+        painelBotoesVenda.add(BtnFinalizarVenda);
+
+        painelRodape.add(painelBotoesVenda, java.awt.BorderLayout.LINE_END);
+
+        painelCorpo.add(painelRodape, java.awt.BorderLayout.PAGE_END);
+
+        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
 
     private void BtnFinalizarVendaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnFinalizarVendaActionPerformed
         if (itensVenda.isEmpty()) {
@@ -231,71 +417,41 @@ public class Vendas extends javax.swing.JFrame {
             return;
         }
 
-        int confirm = javax.swing.JOptionPane.showConfirmDialog(this,
-                "Finalizar venda?\nTotal: " + NumeroTotal1.getText(),
-                "Confirmar", javax.swing.JOptionPane.YES_NO_OPTION);
-
-        if (confirm != javax.swing.JOptionPane.YES_OPTION) {
+        if (!destinoValido()) {
             return;
         }
+        double total = service.VendaService.total(itensVenda);
+        Object[] pagamento = escolherPagamento(total);
+        if (pagamento == null) {
+            return;
+        }
+        entidades.FormaPagamento forma = (entidades.FormaPagamento) pagamento[0];
+        double recebido = (Double) pagamento[1];
 
-        try (java.sql.Connection con = getConnection()) {
-            con.setAutoCommit(false);
-
-            // verifica estoque primeiro
-            for (entidades.Venda v : itensVenda) {
-                java.sql.Statement stmVerifica = con.createStatement();
-                java.sql.ResultSet rsIng = stmVerifica.executeQuery(
-                        "SELECT pi.ingrediente_nome, pi.quantidade * " + v.getQuantidade() + " as necessario, "
-                        + "e.\"Quantidade\" as disponivel "
-                        + "FROM \"ProdutoIngrediente\" pi "
-                        + "JOIN \"Estoque\" e ON e.nome = pi.ingrediente_nome "
-                        + "JOIN \"Produto\" p ON p.id = pi.produto_id "
-                        + "WHERE p.nome = '" + v.getProduto() + "'");
-                while (rsIng.next()) {
-                    if (rsIng.getInt("necessario") > rsIng.getInt("disponivel")) {
-                        javax.swing.JOptionPane.showMessageDialog(this,
-                                "Estoque insuficiente de: " + rsIng.getString("ingrediente_nome")
-                                + "\nNecessário: " + rsIng.getInt("necessario")
-                                + " | Disponível: " + rsIng.getInt("disponivel"));
-                        con.rollback();
-                        return;
-                    }
-                }
-                stmVerifica.close();
+        try {
+            boolean viagem = cmbDestino.getSelectedIndex() == 3;
+            int mesaId = destinoMesa() ? ((entidades.Mesa) cmbMesa.getSelectedItem()).getId() : 0;
+            entidades.Pedido pedido = new service.VendaService().finalizarVenda(itensVenda, forma, recebido,
+                    (Integer) pagamento[2], viagem, mesaId, txtNomeCliente.getText().trim());
+            String onde = destinoMesa() ? "Entregar na " + cmbMesa.getSelectedItem()
+                    : viagem ? "Para viagem: chamar pela senha" : "Consumo no local: chamar pela senha";
+            String msg = String.format("Venda nº %d finalizada!%n%s%nSenha do cliente: %d%nPagamento: %s",
+                    pedido.getId(), onde, pedido.getSenha(), forma);
+            if (pedido.getItens().stream().anyMatch(v -> v.getStatusCozinha() != null)) {
+                msg += String.format("%nOs lanches foram enviados para a cozinha.");
             }
-
-            // desconta e registra
-            for (entidades.Venda v : itensVenda) {
-                java.sql.Statement stmSelect = con.createStatement();
-                java.sql.ResultSet rsIng = stmSelect.executeQuery(
-                        "SELECT pi.ingrediente_nome, pi.quantidade "
-                        + "FROM \"ProdutoIngrediente\" pi "
-                        + "JOIN \"Produto\" p ON p.id = pi.produto_id "
-                        + "WHERE p.nome = '" + v.getProduto() + "'");
-
-                java.util.List<String> nomes = new java.util.ArrayList<>();
-                java.util.List<Integer> qtds = new java.util.ArrayList<>();
-                while (rsIng.next()) {
-                    nomes.add(rsIng.getString("ingrediente_nome"));
-                    qtds.add(rsIng.getInt("quantidade") * v.getQuantidade());
-                }
-                stmSelect.close();
-
-                java.sql.Statement stmUpdate = con.createStatement();
-                for (int i = 0; i < nomes.size(); i++) {
-                    stmUpdate.execute("UPDATE \"Estoque\" SET \"Quantidade\" = \"Quantidade\" - "
-                            + qtds.get(i) + " WHERE nome = '" + nomes.get(i) + "'");
-                }
-                stmUpdate.execute("INSERT INTO \"Venda\" (produto, quantidade, valor, total) VALUES ('"
-                        + v.getProduto() + "', " + v.getQuantidade() + ", "
-                        + v.getValor() + ", " + v.getTotal() + ")");
-                stmUpdate.close();
+            if (forma == entidades.FormaPagamento.DINHEIRO) {
+                msg += String.format("%nTroco: R$ %.2f", service.VendaService.troco(total, recebido));
             }
-
-            con.commit();
-            javax.swing.JOptionPane.showMessageDialog(this, "Venda finalizada com sucesso!");
-
+            javax.swing.JOptionPane.showMessageDialog(this, msg);
+        } catch (service.EstoqueInsuficienteException e) {
+            javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
+                    "Estoque insuficiente", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
+            javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
+                    "Atenção", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
             return;
@@ -305,6 +461,8 @@ public class Vendas extends javax.swing.JFrame {
         atualizarTabela();
         carregarEstoque();
         SelectQnt1.setValue(1);
+        cmbDestino.setSelectedIndex(0);
+        txtNomeCliente.setText("");
     }//GEN-LAST:event_BtnFinalizarVendaActionPerformed
 
     private void BtnAdd1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnAdd1ActionPerformed
@@ -317,22 +475,26 @@ public class Vendas extends javax.swing.JFrame {
             return;
         }
 
-        entidades.Estoque est = listaEstoque.get(DropItemEstoque1.getSelectedIndex());
+        Produto produto = produtos.get(DropItemEstoque1.getSelectedIndex());
 
-        // sem verificação de estoque aqui — a baixa acontece ao finalizar
+        // Sem verificação de estoque aqui: a baixa acontece ao finalizar.
         entidades.Venda v = new entidades.Venda();
-        v.setProduto(est.getNome());
+        v.setProduto(produto.getNome());
         v.setQuantidade(qtd);
-        v.setValor(est.getPreco());
-        v.setTotal(est.getPreco() * qtd);
+        v.setValor(produto.getPreco());
+        // Lanches e acompanhamentos podem ser personalizados; bebida entra direto.
+        if (!"Bebida".equalsIgnoreCase(produto.getTipo()) && !personalizar(produto, v)) {
+            return;
+        }
+        v.setTotal(service.VendaService.arredondar(v.getValor() * qtd));
         itensVenda.add(v);
         atualizarTabela();
         SelectQnt1.setValue(1);
     }//GEN-LAST:event_BtnAdd1ActionPerformed
 
     private void voltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_voltarActionPerformed
-        new Main().setVisible(true);
         dispose();
+        new TelaCaixa().setVisible(true);
 
     }//GEN-LAST:event_voltarActionPerformed
 
@@ -414,8 +576,27 @@ public class Vendas extends javax.swing.JFrame {
     private javax.swing.JLabel TxtQnt1;
     private javax.swing.JLabel TxtTotal1;
     private javax.swing.JButton cancelarVenda;
+    private javax.swing.JComboBox<String> cmbDestino;
+    private javax.swing.JComboBox<Object> cmbMesa;
     private javax.swing.JButton jButton1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JLabel lblDestino;
+    private javax.swing.JLabel lblDestinoTitulo;
+    private javax.swing.JLabel lblNomeCliente;
+    private javax.swing.JLabel lblSubtitulo;
+    private javax.swing.JPanel painelAcoesTopo;
+    private javax.swing.JPanel painelAdicionar;
+    private javax.swing.JPanel painelBotoesVenda;
+    private javax.swing.JPanel painelCabecalho;
+    private javax.swing.JPanel painelCorpo;
+    private javax.swing.JPanel painelDestino;
+    private javax.swing.JPanel painelItemBloco;
+    private javax.swing.JPanel painelLinhaDestino;
+    private javax.swing.JPanel painelLinhaItem;
+    private javax.swing.JPanel painelRodape;
+    private javax.swing.JPanel painelTitulo;
+    private javax.swing.JPanel painelTotal;
+    private javax.swing.JTextField txtNomeCliente;
     private javax.swing.JButton voltar;
     // End of variables declaration//GEN-END:variables
 }
