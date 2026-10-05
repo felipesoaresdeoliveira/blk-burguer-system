@@ -31,3 +31,6 @@ replay_pid*
 # Sistema operacional
 .DS_Store
 Thumbs.db
+
+# Configuração local do banco (credenciais)
+db.properties
