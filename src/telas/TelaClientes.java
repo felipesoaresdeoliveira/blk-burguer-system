@@ -9,9 +9,11 @@ import java.util.Map;
 import javax.swing.JOptionPane;
 import service.Sessao;
 import ui.Tema;
+import ui.Acabamento;
+import ui.Icones;
 
 /** Cadastro de clientes (#19): busca, edição e histórico de compras. */
-public class TelaClientes extends javax.swing.JFrame {
+public class TelaClientes extends javax.swing.JPanel implements Navegavel {
 
     private final ClienteDAO clienteDAO = new ClienteDAO();
     private List<Cliente> clientes = new ArrayList<>();
@@ -20,7 +22,9 @@ public class TelaClientes extends javax.swing.JFrame {
 
     public TelaClientes() {
         initComponents();
-        Tema.janela(this);
+        txtBusca.putClientProperty("JTextField.leadingIcon", Icones.get("search", 16));
+        txtBusca.putClientProperty("JTextField.showClearButton", Boolean.TRUE);
+        Acabamento.vazio(tabelaClientes, "Nenhum cliente encontrado");
         Tema.titulo(lblTitulo);
         Tema.secundario(lblSubtitulo, lblHistorico);
         Tema.primario(btnSalvar);
@@ -47,7 +51,6 @@ public class TelaClientes extends javax.swing.JFrame {
         });
         carregar();
         novo();
-        Tema.tamanhoPadrao(this);
     }
 
     private void carregar() {
@@ -214,9 +217,7 @@ public class TelaClientes extends javax.swing.JFrame {
         btnExcluir = new javax.swing.JButton();
         btnCancelar = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Clientes");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -241,7 +242,7 @@ public class TelaClientes extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -268,7 +269,7 @@ public class TelaClientes extends javax.swing.JFrame {
 
         painelCorpo.add(painelLista, java.awt.BorderLayout.CENTER);
 
-        painelFormulario.setPreferredSize(new java.awt.Dimension(380, 0));
+        painelFormulario.setPreferredSize(new java.awt.Dimension(340, 0));
         painelFormulario.setLayout(new java.awt.BorderLayout(0, 14));
         painelCampos.setLayout(new java.awt.GridLayout(0, 1, 0, 4));
         lblFormTitulo.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
@@ -337,9 +338,8 @@ public class TelaClientes extends javax.swing.JFrame {
 
         painelCorpo.add(painelFormulario, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed

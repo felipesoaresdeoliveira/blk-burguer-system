@@ -9,8 +9,10 @@ import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
+import ui.Tema;
+import ui.Acabamento;
 
-public class TelaHistoricoVendas extends javax.swing.JFrame {
+public class TelaHistoricoVendas extends javax.swing.JPanel implements Navegavel {
 
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/uuuu")
             .withResolverStyle(ResolverStyle.STRICT);
@@ -21,13 +23,14 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
 
     public TelaHistoricoVendas() {
         initComponents();
-        ui.Tema.janela(this);
-        ui.Tema.titulo(lblTitulo);
-        ui.Tema.primario(btnFiltrar);
-        ui.Tema.secundario(lblSubtitulo);
-        ui.Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelFiltro, painelItens);
-        lblItens.setForeground(ui.Tema.TEXTO);
-        lblResumo.setForeground(ui.Tema.TEXTO);
+        Acabamento.vazio(tabelaVendas, "Nenhuma venda no período");
+        Acabamento.vazio(tabelaItens, "Selecione uma venda para ver os itens");
+        Tema.titulo(lblTitulo);
+        Tema.primario(btnFiltrar);
+        Tema.secundario(lblSubtitulo);
+        Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelFiltro, painelItens);
+        lblItens.setForeground(Tema.TEXTO);
+        lblResumo.setForeground(Tema.TEXTO);
         lblResumo.setBorder(javax.swing.BorderFactory.createEmptyBorder(6, 0, 0, 0));
         txtDataInicio.putClientProperty("JTextField.placeholderText", "dd/mm/aaaa");
         txtDataFim.putClientProperty("JTextField.placeholderText", "dd/mm/aaaa");
@@ -38,7 +41,6 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
             }
         });
         carregarVendas();
-        ui.Tema.tamanhoPadrao(this);
     }
 
     /** Converte o texto do filtro; vazio = sem limite. Lança exceção se inválido. */
@@ -97,7 +99,7 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
         tabelaVendas.getColumnModel().getColumn(2).setPreferredWidth(380);
         tabelaVendas.getColumnModel().getColumn(3).setPreferredWidth(90);
         tabelaVendas.getColumnModel().getColumn(4).setPreferredWidth(90);
-        lblResumo.setText(String.format("%d venda(s)  |  Total: R$ %.2f", pedidos.size(), soma));
+        lblResumo.setText(pedidos.size() + " venda(s)  |  Total: " + Tema.reais(soma));
         mostrarItens();
     }
 
@@ -155,9 +157,7 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
         tabelaItens = new javax.swing.JTable();
         lblResumo = new javax.swing.JLabel();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Histórico de vendas");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -182,7 +182,7 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -237,9 +237,8 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
 
         painelCorpo.add(painelItens, java.awt.BorderLayout.PAGE_END);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
 
@@ -258,7 +257,7 @@ public class TelaHistoricoVendas extends javax.swing.JFrame {
     }//GEN-LAST:event_btnVoltarActionPerformed
 
     public static void main(String args[]) {
-        java.awt.EventQueue.invokeLater(() -> new TelaHistoricoVendas().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> Main.testar(new TelaHistoricoVendas()));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -17,20 +17,28 @@ import javax.swing.Timer;
 import service.PedidoService;
 import service.Sessao;
 import ui.Tema;
+import ui.Acabamento;
 
 /** Central de pedidos (#35): tudo que está em andamento, retirada e delivery. */
-public class TelaPedidos extends javax.swing.JFrame {
+public class TelaPedidos extends javax.swing.JPanel implements Navegavel {
 
     private final PedidoService pedidoService = new PedidoService();
     private final ConfiguracaoDAO configuracaoDAO = new ConfiguracaoDAO();
     private final Timer timer;
+
+    @Override
+    public void aoSair() {
+        if (timer != null) {
+            timer.stop();
+        }
+    }
     private List<Pedido> todos = new ArrayList<>();
     private List<Pedido> visiveis = new ArrayList<>();
     private boolean carregando;
 
     public TelaPedidos() {
         initComponents();
-        Tema.janela(this);
+        Acabamento.vazio(tabelaPedidos, "Nenhum pedido em andamento");
         Tema.titulo(lblTitulo);
         Tema.secundario(lblSubtitulo);
         Tema.primario(btnNovaRetirada, btnNovoDelivery, btnReceber);
@@ -45,7 +53,6 @@ public class TelaPedidos extends javax.swing.JFrame {
         timer = new Timer(5000, e -> carregar());
         timer.start();
         carregar();
-        Tema.tamanhoPadrao(this);
     }
 
     private void atualizarTaxa() {
@@ -109,7 +116,7 @@ public class TelaPedidos extends javax.swing.JFrame {
             long min = Duration.between(p.getData(), LocalDateTime.now()).toMinutes();
             String andamento = p.getAndamento() + (p.isContaSolicitada() ? " | pediu a conta" : "");
             modelo.addRow(new Object[]{p.getId(), p.getTipo(), p.getDescricao(), andamento, Tema.reais(p.getTotal()),
-                p.getSituacao() == SituacaoPedido.PAGO ? "Pago" : Tema.reais(p.getSaldo()), min + " min"});
+                p.getSituacao() == SituacaoPedido.PAGO ? "Pago" : Tema.reais(p.getSaldo()), Tema.duracao(min)});
             if (antes != null && antes.getId() == p.getId()) {
                 novaSelecao = i;
             }
@@ -138,9 +145,7 @@ public class TelaPedidos extends javax.swing.JFrame {
     }
 
     private void abrirComanda(int pedidoId) {
-        timer.stop();
-        dispose();
-        new TelaComanda(pedidoId, TelaComanda.Origem.PEDIDOS).setVisible(true);
+        Main.navegar(new TelaComanda(pedidoId, TelaComanda.Origem.PEDIDOS));
     }
 
     private void novaRetirada() {
@@ -282,9 +287,7 @@ public class TelaPedidos extends javax.swing.JFrame {
         btnReceber = new javax.swing.JButton();
         btnAbrir = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Pedidos");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -341,7 +344,7 @@ public class TelaPedidos extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -400,9 +403,8 @@ public class TelaPedidos extends javax.swing.JFrame {
 
         painelCorpo.add(painelAcoes, java.awt.BorderLayout.PAGE_END);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnNovaRetiradaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNovaRetiradaActionPerformed
@@ -422,7 +424,6 @@ public class TelaPedidos extends javax.swing.JFrame {
     }//GEN-LAST:event_btnAtualizarActionPerformed
 
     private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed
-        timer.stop();
         Main.voltar(this);
     }//GEN-LAST:event_btnVoltarActionPerformed
 

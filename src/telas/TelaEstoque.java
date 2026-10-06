@@ -5,21 +5,28 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
 import ui.Tema;
+import ui.Aviso;
+import ui.Acabamento;
+import ui.Icones;
 
-public class TelaEstoque extends javax.swing.JFrame {
+public class TelaEstoque extends javax.swing.JPanel implements Navegavel {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(TelaEstoque.class.getName());
 
     public TelaEstoque() {
         initComponents();
+        txtBusca.putClientProperty("JTextField.leadingIcon", Icones.get("search", 16));
+        txtBusca.putClientProperty("JTextField.showClearButton", Boolean.TRUE);
+        btnLimparFiltro.setText("");
+        btnLimparFiltro.setIcon(Icones.get("x", 16));
+        btnLimparFiltro.setToolTipText("Limpar filtros");
+        Acabamento.vazio(tabelaItens, "Nenhum item encontrado");
         aplicarVisual();
         validaCampos("inicio");
         montaTabela();
-        Tema.tamanhoPadrao(this);
     }
 
     private void aplicarVisual() {
-        Tema.janela(this);
         Tema.titulo(txtTitle);
         Tema.secundario(lblSubtitulo);
         Tema.primario(btnSalvar);
@@ -127,22 +134,12 @@ public class TelaEstoque extends javax.swing.JFrame {
             for (Estoque e : listaEstoque) {
                 modelo.addRow(new Object[]{
                     e.getNome(), e.getTipo(), e.getQuantidade(), e.getMinimo(),
-                    e.getQuantidade() <= 0 ? "⚠ Sem estoque" : e.isEstoqueBaixo() ? "⚠ Baixo" : "OK",
+                    e.getQuantidade() <= 0 ? "Sem estoque" : e.isEstoqueBaixo() ? "Baixo" : "OK",
                     String.format("R$ %.2f", e.getPreco())
                 });
             }
             tabelaItens.setModel(modelo);
-            tabelaItens.getColumnModel().getColumn(4).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(javax.swing.JTable t, Object valor,
-                        boolean selecionado, boolean foco, int linha, int coluna) {
-                    super.getTableCellRendererComponent(t, valor, selecionado, foco, linha, coluna);
-                    String s = String.valueOf(valor);
-                    setForeground(s.contains("Sem") ? Tema.PERIGO : s.contains("Baixo") ? Tema.AVISO : Tema.TEXTO_FRACO);
-                    setFont(getFont().deriveFont(s.equals("OK") ? java.awt.Font.PLAIN : java.awt.Font.BOLD));
-                    return this;
-                }
-            });
+            tabelaItens.getColumnModel().getColumn(0).setPreferredWidth(200);
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(null, e.getMessage());
         }
@@ -191,9 +188,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         btnAjustar = new javax.swing.JButton();
         btnExcluir = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Estoque");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -218,7 +213,7 @@ public class TelaEstoque extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -227,7 +222,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         lblBusca.setText("Buscar:");
         painelBusca.add(lblBusca);
 
-        txtBusca.setPreferredSize(new java.awt.Dimension(260, 30));
+        txtBusca.setPreferredSize(new java.awt.Dimension(190, 30));
         painelBusca.add(txtBusca);
 
         lblFiltroTipo.setText("Tipo:");
@@ -259,7 +254,7 @@ public class TelaEstoque extends javax.swing.JFrame {
 
         painelCorpo.add(painelLista, java.awt.BorderLayout.CENTER);
 
-        painelFormulario.setPreferredSize(new java.awt.Dimension(360, 0));
+        painelFormulario.setPreferredSize(new java.awt.Dimension(330, 0));
         painelFormulario.setLayout(new java.awt.BorderLayout(0, 14));
         painelCampos.setLayout(new java.awt.GridLayout(0, 1, 0, 4));
         lblFormTitulo.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
@@ -362,9 +357,8 @@ public class TelaEstoque extends javax.swing.JFrame {
 
         painelCorpo.add(painelFormulario, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
 
@@ -401,7 +395,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             limparCampos();
             montaTabela();
             validaCampos("inicio");
-            javax.swing.JOptionPane.showMessageDialog(null, "Excluído com sucesso!");
+            Aviso.sucesso(this, "Item excluído");
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
         }
@@ -440,7 +434,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             limparCampos();
             montaTabela();
             validaCampos("inicio");
-            javax.swing.JOptionPane.showMessageDialog(null, "Salvo com sucesso!");
+            Aviso.sucesso(this, "Item salvo");
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
         }
@@ -538,7 +532,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             limparCampos();
             montaTabela();
             validaCampos("inicio");
-            JOptionPane.showMessageDialog(this, "Estoque de \"" + nome + "\" atualizado para " + nova + ".");
+            Aviso.sucesso(this, "Estoque de " + nome + " atualizado para " + nova);
         } catch (IllegalArgumentException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Atenção", JOptionPane.WARNING_MESSAGE);
         } catch (Exception e) {
@@ -568,7 +562,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new TelaEstoque().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> Main.testar(new TelaEstoque()));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

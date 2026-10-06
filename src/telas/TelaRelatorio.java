@@ -14,9 +14,10 @@ import java.util.Map;
 import javax.swing.JOptionPane;
 import ui.CartaoIndicador;
 import ui.Tema;
+import ui.Acabamento;
 
 /** Relatórios por período (#25): indicadores, comparação com o período anterior e gráficos. */
-public class TelaRelatorio extends javax.swing.JFrame {
+public class TelaRelatorio extends javax.swing.JPanel implements Navegavel {
 
     private static final Locale BR = new Locale("pt", "BR");
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT);
@@ -26,6 +27,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
 
     public TelaRelatorio() {
         initComponents();
+        Acabamento.vazio(tabelaProdutos, "Sem vendas no período");
         aplicarVisual();
         cmbPeriodo.setSelectedItem("Últimos 7 dias");
         preencherDatas();
@@ -42,13 +44,11 @@ public class TelaRelatorio extends javax.swing.JFrame {
         };
         txtDe.getDocument().addDocumentListener(paraPersonalizado);
         txtAte.getDocument().addDocumentListener(paraPersonalizado);
-        getRootPane().setDefaultButton(btnAplicar);
+        putClientProperty("BLK.botaoPadrao", btnAplicar);
         carregar();
-        Tema.tamanhoPadrao(this);
     }
 
     private void aplicarVisual() {
-        Tema.janela(this);
         Tema.titulo(txtTitle);
         Tema.secundario(lblSubtitulo);
         Tema.primario(btnAplicar);
@@ -156,7 +156,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
         }
         double variacao = (atual - anterior) / anterior * 100;
         card.setTendencia(variacao >= 0 ? CartaoIndicador.Tendencia.ALTA : CartaoIndicador.Tendencia.BAIXA);
-        card.setDetalhe(String.format(BR, "%+.0f%% vs período anterior (" + formato + ")", variacao, anterior));
+        card.setDetalhe(String.format(BR, "%+.0f%% vs anterior (" + formato + ")", variacao, anterior));
     }
 
     private void mostrarIndicadores(DashboardDAO.Resumo atual, DashboardDAO.Resumo anterior, List<Estoque> baixo) {
@@ -278,9 +278,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         tabelaProdutos = new javax.swing.JTable();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Relatórios");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -305,7 +303,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -385,9 +383,8 @@ public class TelaRelatorio extends javax.swing.JFrame {
 
         painelCorpo.add(painelConteudoRel, java.awt.BorderLayout.CENTER);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnAplicarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAplicarActionPerformed

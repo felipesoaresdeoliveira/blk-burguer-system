@@ -37,7 +37,7 @@ public class CartaoIndicador extends JComponent {
     public void setValor(String valor) { this.valor = valor; repaint(); }
 
     public String getDetalhe() { return detalhe; }
-    public void setDetalhe(String detalhe) { this.detalhe = detalhe; repaint(); }
+    public void setDetalhe(String detalhe) { this.detalhe = detalhe; setToolTipText(detalhe == null || detalhe.isEmpty() ? null : detalhe); repaint(); }
 
     public Tendencia getTendencia() { return tendencia; }
     public void setTendencia(Tendencia tendencia) { this.tendencia = tendencia; repaint(); }

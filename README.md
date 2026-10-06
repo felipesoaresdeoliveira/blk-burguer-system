@@ -14,7 +14,8 @@ Sistema de gestão de hamburgueria desenvolvido em Java Swing com PostgreSQL par
 ## Tecnologias
 
 - Java 8
-- Java Swing + [FlatLaf](https://www.formdev.com/flatlaf/) (tema escuro BLK)
+- Java Swing + [FlatLaf](https://www.formdev.com/flatlaf/) (temas escuro e claro) e FlatLaf Extras + JSVG para os ícones SVG
+- Ícones [Lucide](https://lucide.dev) (licença ISC, em `src/ui/icones/`)
 - PostgreSQL
 - Ant
 - NetBeans
@@ -62,7 +63,7 @@ ant clean compile
 ant run
 ```
 
-O Ant baixa automaticamente as dependências para a pasta `lib/` quando necessário (driver JDBC PostgreSQL 42.7.13 e FlatLaf 3.7.2). Os arquivos `.jar` não são versionados.
+O Ant baixa automaticamente as dependências para a pasta `lib/` quando necessário (driver JDBC PostgreSQL 42.7.13, FlatLaf 3.7.2, FlatLaf Extras 3.7.2 e JSVG 2.1.0). Os arquivos `.jar` não são versionados.
 
 **NetBeans:** antes de abrir o projeto pela primeira vez, rode `ant deps` para baixar os `.jar` de `lib/`, que já estão referenciados no classpath do projeto.
 
@@ -84,10 +85,14 @@ Caixa, TV da cozinha e gerência podem rodar em computadores diferentes usando o
 
 O app do garçom pelo celular (rede local, sem depender de internet) está planejado em [docs/app-garcom.md](docs/app-garcom.md).
 
-## Visual e dashboard
+## Visual e navegação
 
-- Toda a identidade visual (cores, fontes, botões) fica em `ui.Tema`. As telas não usam cores fixas; use `Tema.titulo`, `Tema.primario` e `Tema.perigo` no construtor.
-- A tela inicial (`telas.Main`) é um dashboard com indicadores do dia e gráficos dos últimos 7 dias. Os gráficos são componentes próprios em `ui/` (`GraficoColunas`, `GraficoRosca`, `GraficoBarras`, `PainelAlertas`, `CartaoIndicador`) e já estão declarados no `Main.form`, então o designer do NetBeans os exibe normalmente (depois de compilar o projeto).
+- **Janela única:** depois do login, tudo acontece em `telas.Main`, com menu lateral fixo (só aparecem os módulos do perfil logado), caminho da tela no topo e relógio. Cada tela é um `JPanel` que implementa `telas.Navegavel`; para trocar de tela use `Main.navegar(new TelaX())`. Timers e atualizações automáticas param em `aoSair()`.
+- **Temas escuro e claro:** o botão no rodapé do menu (ou na tela de login) alterna o tema, e a escolha fica salva no computador. Todas as cores ficam em `ui.Tema`; as telas não usam cores fixas (`Tema.titulo`, `Tema.primario`, `Tema.perigo`, `Tema.reais`...).
+- **Ícones:** `ui.Icones.get("nome", tamanho)` carrega um SVG de `src/ui/icones/` na cor do tema. Os botões ganham ícone automaticamente pelo texto (`ui.Acabamento`), que também alinha números à direita, mostra status como selos coloridos e escreve uma mensagem nas tabelas vazias.
+- **Avisos:** confirmações de sucesso aparecem como aviso discreto no canto da tela (`ui.Aviso.sucesso`), sem caixa de diálogo para fechar.
+- **Visão geral:** dashboard com indicadores do dia e gráficos dos últimos 7 dias (`telas.TelaVisaoGeral`). Os gráficos são componentes próprios em `ui/` (`GraficoColunas`, `GraficoRosca`, `GraficoBarras`, `PainelAlertas`, `CartaoIndicador`) declarados no `.form`, então o designer do NetBeans os exibe normalmente (depois de compilar).
+- **Cozinha na TV:** a conta da cozinha abre direto o painel em tela cheia (`telas.CozinhaTV`; F11 alterna, Esc sai da tela cheia). Pelo menu, "Abrir na TV" faz o mesmo em qualquer perfil com acesso à cozinha.
 
 ## Estrutura de branches
 

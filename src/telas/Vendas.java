@@ -4,8 +4,10 @@ import entidades.Adicional;
 import entidades.Produto;
 import entidades.Venda;
 import java.util.Map;
+import ui.Tema;
+import ui.Acabamento;
 
-public class Vendas extends javax.swing.JFrame {
+public class Vendas extends javax.swing.JPanel implements Navegavel {
 
     private java.util.List<Venda> itensVenda = new java.util.ArrayList<>();
     private java.util.List<Produto> produtos = new java.util.ArrayList<>();
@@ -142,17 +144,17 @@ public class Vendas extends javax.swing.JFrame {
             campoRecebido.setEnabled(dinheiro);
             if (!dinheiro) {
                 lblTroco.setText("Troco: R$ 0,00");
-                lblTroco.setForeground(ui.Tema.SUCESSO);
+                lblTroco.setForeground(Tema.SUCESSO);
                 return;
             }
             Double recebido = lerValor(campoRecebido.getText());
             double troco = recebido == null ? -total : service.VendaService.troco(total, recebido);
             if (troco < 0) {
                 lblTroco.setText(String.format("Faltam: R$ %.2f", -troco));
-                lblTroco.setForeground(ui.Tema.PERIGO);
+                lblTroco.setForeground(Tema.PERIGO);
             } else {
                 lblTroco.setText(String.format("Troco: R$ %.2f", troco));
-                lblTroco.setForeground(ui.Tema.SUCESSO);
+                lblTroco.setForeground(Tema.SUCESSO);
             }
         };
         campoForma.addActionListener(e -> atualizar.run());
@@ -177,7 +179,7 @@ public class Vendas extends javax.swing.JFrame {
         painel.add(lblTotal);
         javax.swing.JLabel lblOnde = new javax.swing.JLabel("Entregar em: " + descricaoDestino());
         lblOnde.setFont(lblOnde.getFont().deriveFont(java.awt.Font.BOLD, 14f));
-        lblOnde.setForeground(ui.Tema.DESTAQUE);
+        lblOnde.setForeground(Tema.DESTAQUE);
         painel.add(lblOnde);
         painel.add(new javax.swing.JLabel("Forma de pagamento:"));
         painel.add(campoForma);
@@ -209,27 +211,26 @@ public class Vendas extends javax.swing.JFrame {
 
     public Vendas() {
         initComponents();
-        ui.Tema.janela(this);
-        ui.Tema.titulo(BLKBurguer1);
-        ui.Tema.secundario(lblSubtitulo);
-        ui.Tema.primario(BtnFinalizarVenda);
-        ui.Tema.perigo(cancelarVenda);
-        ui.Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelAdicionar,
+        Acabamento.vazio(TableItensVenda1, "Escolha o destino, adicione os itens e finalize");
+        Tema.titulo(BLKBurguer1);
+        Tema.secundario(lblSubtitulo);
+        Tema.primario(BtnFinalizarVenda);
+        Tema.perigo(cancelarVenda);
+        Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelAdicionar,
                 painelLinhaItem, painelRodape, painelTotal, painelBotoesVenda, painelDestino, painelLinhaDestino,
                 painelItemBloco);
-        TxtADDItem1.setForeground(ui.Tema.TEXTO);
-        lblDestinoTitulo.setForeground(ui.Tema.DESTAQUE);
+        TxtADDItem1.setForeground(Tema.TEXTO);
+        lblDestinoTitulo.setForeground(Tema.DESTAQUE);
         txtNomeCliente.putClientProperty("JTextField.placeholderText", "para chamar o cliente");
         cmbDestino.addActionListener(e -> atualizarDestino());
         carregarMesas();
         atualizarDestino();
-        NumeroTotal1.setForeground(ui.Tema.DESTAQUE);
+        NumeroTotal1.setForeground(Tema.DESTAQUE);
         BtnFinalizarVenda.setFont(BtnFinalizarVenda.getFont().deriveFont(java.awt.Font.BOLD, 16f));
         BtnFinalizarVenda.setPreferredSize(new java.awt.Dimension(200, 46));
         SelectQnt1.setModel(new javax.swing.SpinnerNumberModel(1, 1, 999, 1));
         carregarEstoque();
         atualizarTabela();
-        ui.Tema.tamanhoPadrao(this);
     }
 
     @SuppressWarnings("unchecked")
@@ -271,9 +272,7 @@ public class Vendas extends javax.swing.JFrame {
         cancelarVenda = new javax.swing.JButton();
         BtnFinalizarVenda = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Nova venda");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -298,7 +297,7 @@ public class Vendas extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -405,9 +404,8 @@ public class Vendas extends javax.swing.JFrame {
 
         painelCorpo.add(painelRodape, java.awt.BorderLayout.PAGE_END);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
 
@@ -493,8 +491,7 @@ public class Vendas extends javax.swing.JFrame {
     }//GEN-LAST:event_BtnAdd1ActionPerformed
 
     private void voltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_voltarActionPerformed
-        dispose();
-        new TelaCaixa().setVisible(true);
+        Main.navegar(new TelaCaixa());
 
     }//GEN-LAST:event_voltarActionPerformed
 
@@ -558,7 +555,7 @@ public class Vendas extends javax.swing.JFrame {
 
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new Vendas().setVisible(true);
+                Main.testar(new Vendas());
             }
         });
     }

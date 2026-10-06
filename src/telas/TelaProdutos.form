@@ -1,17 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<Form version="1.5" maxVersion="1.9" type="org.netbeans.modules.form.forminfo.JFrameFormInfo">
-  <Properties>
-    <Property name="defaultCloseOperation" type="int" value="3"/>
-    <Property name="title" type="java.lang.String" value="BLK Burguer - Produtos"/>
-    <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-      <Dimension value="[1180, 720]"/>
-    </Property>
-  </Properties>
-  <SyntheticProperties>
-    <SyntheticProperty name="formSizePolicy" type="int" value="1"/>
-    <SyntheticProperty name="generateCenter" type="boolean" value="false"/>
-  </SyntheticProperties>
+<Form version="1.5" maxVersion="1.9" type="org.netbeans.modules.form.forminfo.JPanelFormInfo">
   <AuxValues>
     <AuxValue name="FormSettings_autoResourcing" type="java.lang.Integer" value="0"/>
     <AuxValue name="FormSettings_autoSetComponentName" type="java.lang.Boolean" value="false"/>
@@ -165,7 +154,7 @@
                     <Component class="javax.swing.JTextField" name="txtBusca">
                       <Properties>
                         <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-                          <Dimension value="[240, 30]"/>
+                          <Dimension value="[200, 30]"/>
                         </Property>
                       </Properties>
                     </Component>
@@ -225,7 +214,7 @@
         <Container class="javax.swing.JPanel" name="painelFicha">
           <Properties>
             <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-              <Dimension value="[500, 0]"/>
+              <Dimension value="[450, 0]"/>
             </Property>
           </Properties>
           <Constraints>
@@ -408,85 +397,117 @@
                 </Constraint>
               </Constraints>
 
-              <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridLayout">
-                <Property name="columns" type="int" value="1"/>
+              <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout">
                 <Property name="horizontalGap" type="int" value="0"/>
-                <Property name="rows" type="int" value="0"/>
-                <Property name="verticalGap" type="int" value="6"/>
+                <Property name="verticalGap" type="int" value="10"/>
               </Layout>
               <SubComponents>
-                <Component class="javax.swing.JButton" name="btnRemoverIngrediente">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="Remover ingrediente selecionado"/>
-                  </Properties>
-                  <Events>
-                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnRemoverIngredienteActionPerformed"/>
-                  </Events>
-                </Component>
-                <Container class="javax.swing.JPanel" name="painelResumo">
+                <Container class="javax.swing.JPanel" name="painelResumoFicha">
+                  <Constraints>
+                    <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
+                      <BorderConstraints direction="North"/>
+                    </Constraint>
+                  </Constraints>
 
-                  <Layout class="org.netbeans.modules.form.compat2.layouts.DesignFlowLayout">
-                    <Property name="alignment" type="int" value="0"/>
-                    <Property name="horizontalGap" type="int" value="6"/>
-                    <Property name="verticalGap" type="int" value="0"/>
+                  <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout">
+                    <Property name="horizontalGap" type="int" value="0"/>
+                    <Property name="verticalGap" type="int" value="4"/>
                   </Layout>
                   <SubComponents>
-                    <Component class="javax.swing.JLabel" name="txtCustoEstimado">
+                    <Component class="javax.swing.JButton" name="btnRemoverIngrediente">
                       <Properties>
-                        <Property name="text" type="java.lang.String" value="Custo: R$"/>
+                        <Property name="text" type="java.lang.String" value="Remover ingrediente selecionado"/>
                       </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnRemoverIngredienteActionPerformed"/>
+                      </Events>
+                      <Constraints>
+                        <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
+                          <BorderConstraints direction="North"/>
+                        </Constraint>
+                      </Constraints>
                     </Component>
-                    <Component class="javax.swing.JLabel" name="valorCEstimado">
+                    <Container class="javax.swing.JPanel" name="painelResumo">
+                      <Constraints>
+                        <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
+                          <BorderConstraints direction="Center"/>
+                        </Constraint>
+                      </Constraints>
+
+                      <Layout class="org.netbeans.modules.form.compat2.layouts.DesignFlowLayout">
+                        <Property name="alignment" type="int" value="0"/>
+                        <Property name="horizontalGap" type="int" value="6"/>
+                        <Property name="verticalGap" type="int" value="0"/>
+                      </Layout>
+                      <SubComponents>
+                        <Component class="javax.swing.JLabel" name="txtCustoEstimado">
+                          <Properties>
+                            <Property name="text" type="java.lang.String" value="Custo: R$"/>
+                          </Properties>
+                        </Component>
+                        <Component class="javax.swing.JLabel" name="valorCEstimado">
+                          <Properties>
+                            <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                              <Font name="Segoe UI" size="13" style="1"/>
+                            </Property>
+                            <Property name="text" type="java.lang.String" value="0,00"/>
+                          </Properties>
+                        </Component>
+                        <Component class="javax.swing.JLabel" name="jLabel2">
+                          <Properties>
+                            <Property name="text" type="java.lang.String" value="|"/>
+                          </Properties>
+                        </Component>
+                        <Component class="javax.swing.JLabel" name="txtMargem">
+                          <Properties>
+                            <Property name="text" type="java.lang.String" value="Lucro: R$"/>
+                          </Properties>
+                        </Component>
+                        <Component class="javax.swing.JLabel" name="txtValorMargem">
+                          <Properties>
+                            <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                              <Font name="Segoe UI" size="13" style="1"/>
+                            </Property>
+                            <Property name="text" type="java.lang.String" value="0,00"/>
+                          </Properties>
+                        </Component>
+                        <Component class="javax.swing.JLabel" name="lblMargemPercentual">
+                          <Properties>
+                            <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                              <Font name="Segoe UI" size="13" style="1"/>
+                            </Property>
+                            <Property name="text" type="java.lang.String" value=""/>
+                          </Properties>
+                        </Component>
+                      </SubComponents>
+                    </Container>
+                    <Component class="javax.swing.JLabel" name="lblAvisoPreco">
                       <Properties>
                         <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Segoe UI" size="13" style="1"/>
+                          <Font name="Segoe UI" size="12" style="1"/>
                         </Property>
-                        <Property name="text" type="java.lang.String" value="0,00"/>
+                        <Property name="text" type="java.lang.String" value=" "/>
                       </Properties>
-                    </Component>
-                    <Component class="javax.swing.JLabel" name="jLabel2">
-                      <Properties>
-                        <Property name="text" type="java.lang.String" value="|"/>
-                      </Properties>
-                    </Component>
-                    <Component class="javax.swing.JLabel" name="txtMargem">
-                      <Properties>
-                        <Property name="text" type="java.lang.String" value="Lucro: R$"/>
-                      </Properties>
-                    </Component>
-                    <Component class="javax.swing.JLabel" name="txtValorMargem">
-                      <Properties>
-                        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Segoe UI" size="13" style="1"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="0,00"/>
-                      </Properties>
-                    </Component>
-                    <Component class="javax.swing.JLabel" name="lblMargemPercentual">
-                      <Properties>
-                        <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                          <Font name="Segoe UI" size="13" style="1"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value=""/>
-                      </Properties>
+                      <Constraints>
+                        <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
+                          <BorderConstraints direction="South"/>
+                        </Constraint>
+                      </Constraints>
                     </Component>
                   </SubComponents>
                 </Container>
-                <Component class="javax.swing.JLabel" name="lblAvisoPreco">
-                  <Properties>
-                    <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
-                      <Font name="Segoe UI" size="12" style="1"/>
-                    </Property>
-                    <Property name="text" type="java.lang.String" value=" "/>
-                  </Properties>
-                </Component>
                 <Container class="javax.swing.JPanel" name="painelBotoes">
+                  <Constraints>
+                    <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
+                      <BorderConstraints direction="South"/>
+                    </Constraint>
+                  </Constraints>
 
                   <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridLayout">
-                    <Property name="columns" type="int" value="5"/>
+                    <Property name="columns" type="int" value="3"/>
                     <Property name="horizontalGap" type="int" value="6"/>
-                    <Property name="rows" type="int" value="1"/>
-                    <Property name="verticalGap" type="int" value="0"/>
+                    <Property name="rows" type="int" value="0"/>
+                    <Property name="verticalGap" type="int" value="6"/>
                   </Layout>
                   <SubComponents>
                     <Component class="javax.swing.JButton" name="btnNovo">
