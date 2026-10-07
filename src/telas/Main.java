@@ -65,7 +65,10 @@ public class Main extends javax.swing.JFrame {
         ITENS.add(new Item("Cadastros", "Estoque", "package", Modulo.ESTOQUE, TelaEstoque.class, TelaEstoque::new));
         ITENS.add(new Item("Gestão", "Histórico de vendas", "history", Modulo.HISTORICO, TelaHistoricoVendas.class, TelaHistoricoVendas::new));
         ITENS.add(new Item("Gestão", "Relatórios", "chart-column", Modulo.RELATORIOS, TelaRelatorio.class, TelaRelatorio::new));
+        ITENS.add(new Item("Gestão", "Fechamento do dia", "calendar-check", Modulo.RELATORIOS, TelaFechamento.class, TelaFechamento::new));
+        ITENS.add(new Item("Gestão", "Despesas", "banknote", Modulo.DESPESAS, TelaDespesas.class, TelaDespesas::new));
         ITENS.add(new Item("Gestão", "Usuários", "shield-user", Modulo.USUARIOS, TelaUsuarios.class, TelaUsuarios::new));
+        ITENS.add(new Item("Gestão", "Auditoria", "scroll-text", Modulo.AUDITORIA, TelaAuditoria.class, TelaAuditoria::new));
     }
 
     /** Telas sem item próprio no menu: qual item fica marcado e o caminho exibido. */
@@ -166,7 +169,9 @@ public class Main extends javax.swing.JFrame {
         painelMenu.setBackground(Tema.MENU);
         painelMenu.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 0, 1, Tema.BORDA), painelMenu.getBorder()));
-        Tema.transparente(painelMarca, painelMarcaTexto, painelRodapeMenu, painelNav, painelTopoDireita);
+        Tema.transparente(painelMarca, painelMarcaTexto, painelRodapeMenu, painelAcoesMenu, painelNav, painelTopoDireita);
+        painelRodapeMenu.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, Tema.BORDA), BorderFactory.createEmptyBorder(10, 0, 0, 0)));
         scrollMenu.setBorder(BorderFactory.createEmptyBorder());
         scrollMenu.setOpaque(false);
         scrollMenu.getViewport().setOpaque(false);
@@ -190,14 +195,15 @@ public class Main extends javax.swing.JFrame {
         lblUsuarioLogado.setForeground(Tema.TEXTO_SECUNDARIO);
         lblUsuarioLogado.setIcon(Icones.comCor("user", 18, () -> Tema.TEXTO_SECUNDARIO));
         lblUsuarioLogado.setIconTextGap(10);
-        lblUsuarioLogado.setBorder(BorderFactory.createEmptyBorder(8, 10, 4, 4));
+        lblUsuarioLogado.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
         for (JButton b : new JButton[]{btnTema, btnSair}) {
             estiloMenu(b);
+            b.putClientProperty("FlatLaf.style", "margin: 8,8,8,8; hoverBackground: " + hex(Tema.HOVER));
+            b.setText(null);
         }
-        btnTema.setText(Tema.isEscuro() ? "Tema claro" : "Tema escuro");
+        btnTema.setToolTipText(Tema.isEscuro() ? "Usar tema claro" : "Usar tema escuro");
         btnTema.setIcon(Icones.comCor(Tema.isEscuro() ? "sun" : "moon", 18, () -> Tema.TEXTO_SECUNDARIO));
         btnSair.setIcon(Icones.comCor("log-out", 18, () -> Tema.TEXTO_SECUNDARIO));
-        btnSair.setText("Sair / trocar usuário");
     }
 
     private static void estiloMenu(JButton b) {
@@ -206,7 +212,9 @@ public class Main extends javax.swing.JFrame {
         b.setHorizontalAlignment(JButton.LEFT);
         b.setIconTextGap(12);
         b.setForeground(Tema.TEXTO_SECUNDARIO);
-        b.putClientProperty("FlatLaf.style", "margin: 9,12,9,12; hoverBackground: " + hex(Tema.HOVER));
+        b.putClientProperty("FlatLaf.style", "margin: 8,12,8,12; hoverBackground: " + hex(Tema.HOVER));
+        // Sem fundo próprio: um item que deixou de ser o selecionado não fica cinza.
+        b.setBackground(Tema.MENU);
     }
 
     private static String hex(java.awt.Color c) {
@@ -228,7 +236,7 @@ public class Main extends javax.swing.JFrame {
                     JLabel cab = new JLabel(i.grupo.toUpperCase());
                     cab.setFont(cab.getFont().deriveFont(Font.BOLD, 11f));
                     cab.setForeground(Tema.TEXTO_FRACO);
-                    cab.setBorder(BorderFactory.createEmptyBorder(16, 12, 6, 0));
+                    cab.setBorder(BorderFactory.createEmptyBorder(12, 12, 4, 0));
                     cab.setAlignmentX(Component.LEFT_ALIGNMENT);
                     painelNav.add(cab);
                 }
@@ -259,7 +267,7 @@ public class Main extends javax.swing.JFrame {
             }
             if (ativo) {
                 b.putClientProperty("JButton.buttonType", null);
-                b.putClientProperty("FlatLaf.style", "margin: 9,12,9,12; font: bold; borderWidth: 0; focusWidth: 0;"
+                b.putClientProperty("FlatLaf.style", "margin: 8,12,8,12; font: bold; borderWidth: 0; focusWidth: 0;"
                         + " background: " + hex(Tema.SELECIONADO) + "; foreground: " + hex(Tema.DESTAQUE));
                 b.setIcon(Icones.comCor(item.icone, 18, () -> Tema.DESTAQUE));
             } else {
@@ -354,8 +362,9 @@ public class Main extends javax.swing.JFrame {
         scrollMenu = new javax.swing.JScrollPane();
         painelNav = new javax.swing.JPanel();
         painelRodapeMenu = new javax.swing.JPanel();
-        btnTema = new javax.swing.JButton();
         lblUsuarioLogado = new javax.swing.JLabel();
+        painelAcoesMenu = new javax.swing.JPanel();
+        btnTema = new javax.swing.JButton();
         btnSair = new javax.swing.JButton();
         painelPrincipal = new javax.swing.JPanel();
         painelTopo = new javax.swing.JPanel();
@@ -389,27 +398,28 @@ public class Main extends javax.swing.JFrame {
         scrollMenu.setViewportView(painelNav);
         painelMenu.add(scrollMenu, java.awt.BorderLayout.CENTER);
 
-        painelRodapeMenu.setLayout(new java.awt.GridLayout(0, 1, 0, 6));
-        btnTema.setText("Tema claro");
-        btnTema.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        painelRodapeMenu.setLayout(new java.awt.BorderLayout(4, 0));
+        lblUsuarioLogado.setText("usuário");
+        painelRodapeMenu.add(lblUsuarioLogado, java.awt.BorderLayout.CENTER);
+
+        painelAcoesMenu.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 2, 0));
+        btnTema.setToolTipText("Alternar tema claro/escuro");
         btnTema.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnTemaActionPerformed(evt);
             }
         });
-        painelRodapeMenu.add(btnTema);
+        painelAcoesMenu.add(btnTema);
 
-        lblUsuarioLogado.setText("usuário");
-        painelRodapeMenu.add(lblUsuarioLogado);
-
-        btnSair.setText("Sair");
-        btnSair.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnSair.setToolTipText("Sair / trocar usuário");
         btnSair.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSairActionPerformed(evt);
             }
         });
-        painelRodapeMenu.add(btnSair);
+        painelAcoesMenu.add(btnSair);
+
+        painelRodapeMenu.add(painelAcoesMenu, java.awt.BorderLayout.LINE_END);
 
         painelMenu.add(painelRodapeMenu, java.awt.BorderLayout.PAGE_END);
 
@@ -461,6 +471,7 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JLabel lblRelogio;
     private javax.swing.JLabel lblSlogan;
     private javax.swing.JLabel lblUsuarioLogado;
+    private javax.swing.JPanel painelAcoesMenu;
     private javax.swing.JPanel painelConteudo;
     private javax.swing.JPanel painelMarca;
     private javax.swing.JPanel painelMarcaTexto;

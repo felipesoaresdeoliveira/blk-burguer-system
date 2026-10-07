@@ -322,6 +322,7 @@ public class TelaComanda extends javax.swing.JPanel implements Navegavel {
         btnSaiu = new javax.swing.JButton();
         btnEntregue = new javax.swing.JButton();
         btnCancelarPedido = new javax.swing.JButton();
+        btnImprimir = new javax.swing.JButton();
         btnReceber = new javax.swing.JButton();
 
         setLayout(new java.awt.BorderLayout());
@@ -476,6 +477,14 @@ public class TelaComanda extends javax.swing.JPanel implements Navegavel {
         });
         painelBotoes.add(btnCancelarPedido);
 
+        btnImprimir.setText("Imprimir");
+        btnImprimir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnImprimirActionPerformed(evt);
+            }
+        });
+        painelBotoes.add(btnImprimir);
+
         btnReceber.setText("Receber");
         btnReceber.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -491,6 +500,10 @@ public class TelaComanda extends javax.swing.JPanel implements Navegavel {
         add(painelCorpo, java.awt.BorderLayout.CENTER);
 
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btnImprimirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImprimirActionPerformed
+        impressao.Impressao.menu(btnImprimir, pedidoId);
+    }//GEN-LAST:event_btnImprimirActionPerformed
 
     private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed
         if (!rascunho.isEmpty() && JOptionPane.showConfirmDialog(this,
@@ -560,6 +573,7 @@ public class TelaComanda extends javax.swing.JPanel implements Navegavel {
     private javax.swing.JButton btnConta;
     private javax.swing.JButton btnEntregue;
     private javax.swing.JButton btnEnviar;
+    private javax.swing.JButton btnImprimir;
     private javax.swing.JButton btnReceber;
     private javax.swing.JButton btnRemoverItem;
     private javax.swing.JButton btnSaiu;

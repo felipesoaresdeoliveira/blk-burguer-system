@@ -45,6 +45,7 @@ public class PedidoDAO {
         p.setIdentificacao(rs.getString("identificacao"));
         p.setSenha(rs.getInt("senha_retirada"));
         p.setTaxaEntrega(rs.getDouble("taxa_entrega"));
+        p.setDesconto(rs.getDouble("desconto"));
         p.setEnderecoEntrega(rs.getString("endereco_entrega"));
         p.setStatusEntrega(rs.getString("status_entrega"));
         p.setContaSolicitada(rs.getBoolean("conta_solicitada"));
@@ -159,12 +160,18 @@ public class PedidoDAO {
         return pedidos;
     }
 
+    /**
+     * Total = itens + taxa de entrega - desconto. Se itens saírem e o desconto
+     * ficar maior que o subtotal, ele é reduzido ao subtotal (total nunca negativo).
+     */
     public void recalcularTotal(Connection con, int pedidoId) throws SQLException {
         try (PreparedStatement pst = con.prepareStatement(
-                "UPDATE \"Pedido\" SET total = taxa_entrega + "
-                + "COALESCE((SELECT SUM(total) FROM \"Venda\" WHERE pedido_id = ?), 0) WHERE id = ?")) {
+                "UPDATE \"Pedido\" p SET desconto = LEAST(p.desconto, s.sub), total = ROUND((s.sub - LEAST(p.desconto, s.sub))::numeric, 2)::float8 "
+                + "FROM (SELECT ROUND((taxa_entrega + COALESCE((SELECT SUM(total) FROM \"Venda\" WHERE pedido_id = ?), 0))::numeric, 2)::float8 AS sub "
+                + "      FROM \"Pedido\" WHERE id = ?) s WHERE p.id = ?")) {
             pst.setInt(1, pedidoId);
             pst.setInt(2, pedidoId);
+            pst.setInt(3, pedidoId);
             pst.executeUpdate();
         }
     }

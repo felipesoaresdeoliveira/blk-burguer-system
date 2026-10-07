@@ -8,7 +8,7 @@ import java.util.Set;
 public enum Perfil {
 
     ADMIN("Administrador", EnumSet.allOf(Modulo.class)),
-    GERENTE("Gerente", EnumSet.complementOf(EnumSet.of(Modulo.USUARIOS))),
+    GERENTE("Gerente", EnumSet.complementOf(EnumSet.of(Modulo.USUARIOS, Modulo.AUDITORIA))),
     // Enquanto não há o app do garçom, o caixa também anota pedidos de mesa, retirada e delivery.
     CAIXA("Caixa", EnumSet.of(Modulo.VENDA_BALCAO, Modulo.CAIXA, Modulo.PEDIDOS, Modulo.MESAS,
             Modulo.CLIENTES, Modulo.HISTORICO)),

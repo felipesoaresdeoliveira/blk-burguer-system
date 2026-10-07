@@ -139,6 +139,7 @@ public class TelaPedidos extends javax.swing.JPanel implements Navegavel {
         Pedido p = selecionado();
         boolean delivery = p != null && p.getTipo() == TipoPedido.DELIVERY && p.getSituacao() != SituacaoPedido.CANCELADO;
         btnAbrir.setEnabled(p != null);
+        btnImprimir.setEnabled(p != null);
         btnReceber.setEnabled(p != null && p.getSituacao() == SituacaoPedido.ABERTO && p.getSaldo() > 0);
         btnSaiu.setEnabled(delivery && p.getStatusEntrega() == null);
         btnEntregue.setEnabled(delivery && !"ENTREGUE".equals(p.getStatusEntrega()));
@@ -284,6 +285,7 @@ public class TelaPedidos extends javax.swing.JPanel implements Navegavel {
         painelAcoes = new javax.swing.JPanel();
         btnSaiu = new javax.swing.JButton();
         btnEntregue = new javax.swing.JButton();
+        btnImprimir = new javax.swing.JButton();
         btnReceber = new javax.swing.JButton();
         btnAbrir = new javax.swing.JButton();
 
@@ -385,6 +387,14 @@ public class TelaPedidos extends javax.swing.JPanel implements Navegavel {
         });
         painelAcoes.add(btnEntregue);
 
+        btnImprimir.setText("Imprimir");
+        btnImprimir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnImprimirActionPerformed(evt);
+            }
+        });
+        painelAcoes.add(btnImprimir);
+
         btnReceber.setText("Receber");
         btnReceber.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -406,6 +416,13 @@ public class TelaPedidos extends javax.swing.JPanel implements Navegavel {
         add(painelCorpo, java.awt.BorderLayout.CENTER);
 
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btnImprimirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImprimirActionPerformed
+        Pedido p = selecionado();
+        if (p != null) {
+            impressao.Impressao.menu(btnImprimir, p.getId());
+        }
+    }//GEN-LAST:event_btnImprimirActionPerformed
 
     private void btnNovaRetiradaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNovaRetiradaActionPerformed
         novaRetirada();
@@ -459,6 +476,7 @@ public class TelaPedidos extends javax.swing.JPanel implements Navegavel {
     private javax.swing.JButton btnAbrir;
     private javax.swing.JButton btnAtualizar;
     private javax.swing.JButton btnEntregue;
+    private javax.swing.JButton btnImprimir;
     private javax.swing.JButton btnNovaRetirada;
     private javax.swing.JButton btnNovoDelivery;
     private javax.swing.JButton btnReceber;

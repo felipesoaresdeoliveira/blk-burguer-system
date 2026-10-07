@@ -216,9 +216,9 @@
                     <Property name="titulo" type="java.lang.String" value="Ticket médio"/>
                   </Properties>
                 </Component>
-                <Component class="ui.CartaoIndicador" name="cardItens">
+                <Component class="ui.CartaoIndicador" name="cardResultado">
                   <Properties>
-                    <Property name="titulo" type="java.lang.String" value="Itens vendidos"/>
+                    <Property name="titulo" type="java.lang.String" value="Resultado"/>
                   </Properties>
                 </Component>
                 <Component class="ui.CartaoIndicador" name="cardEstoque">

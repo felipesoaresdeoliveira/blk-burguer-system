@@ -4,12 +4,16 @@ Sistema de gestão de hamburgueria desenvolvido em Java Swing com PostgreSQL par
 
 ## Funcionalidades atuais
 
-- Login de usuários
-- Controle de estoque e ingredientes
-- Cadastro de produtos e composição por ingredientes
-- Registro e finalização de vendas
-- Baixa automática de estoque
-- Relatório de vendas e estoque crítico
+- **Login e perfis**: administrador, gerente, caixa, garçom e cozinha, cada um vendo só o que pode usar
+- **Operação**: venda de balcão (com desconto), mesas e comandas, retirada e delivery, pagamento dividido em várias formas
+- **Cozinha**: painel em tempo real para a TV, com remoções, adicionais e fila por ordem de chegada
+- **Caixa**: abertura, sangria, suprimento e fechamento com conferência por forma de pagamento
+- **Cadastros**: clientes, produtos com ficha técnica e estoque com baixa automática
+- **Estoque**: entradas, ajustes e perdas (vencimento, quebra, descarte), com histórico de quem fez
+- **Gestão**: visão geral com gráficos, relatórios por período, fechamento do dia, despesas e resultado
+- **Impressão**: conta da mesa, pedido para a cozinha, recibo e fechamento do dia, com visualização antes de imprimir (bobina 80/58 mm ou folha comum)
+- **Auditoria**: cancelamentos, descontos, preços, perdas, caixa e contas ficam registrados; o banco não permite alterar esse histórico
+- **Backup**: scripts para gerar e restaurar backups do PostgreSQL ([docs/backup.md](docs/backup.md))
 
 ## Tecnologias
 
@@ -71,8 +75,8 @@ O Ant baixa automaticamente as dependências para a pasta `lib/` quando necessá
 
 O primeiro usuário cadastrado direto no banco vira **Administrador**. Pelo sistema, o administrador cria as demais contas em **Usuários**:
 
-- **Administrador** (o chefe): acesso total, cria e gerencia contas.
-- **Gerente**: gerencia a operação, tudo exceto criar contas.
+- **Administrador** (o chefe): acesso total, cria e gerencia contas e consulta a auditoria.
+- **Gerente**: gerencia a operação (inclusive despesas e fechamento do dia), exceto contas e auditoria.
 - **Caixa**: entra direto na tela do Caixa; vende no balcão, anota mesas/retirada/delivery, recebe (inclusive dividido), abre e fecha o caixa.
 - **Garçom**: mesas, comandas e pedidos.
 - **Cozinha**: abre direto o painel de produção (feito para a TV da cozinha).
@@ -84,6 +88,10 @@ As senhas são guardadas com hash PBKDF2; senhas antigas em texto são convertid
 Caixa, TV da cozinha e gerência podem rodar em computadores diferentes usando o mesmo banco. O passo a passo (liberar o PostgreSQL na rede, gerar o pacote com `ant jar` e configurar cada máquina) está em [docs/rede.md](docs/rede.md).
 
 O app do garçom pelo celular (rede local, sem depender de internet) está planejado em [docs/app-garcom.md](docs/app-garcom.md).
+
+## Backup
+
+Para gerar e restaurar backups do banco veja [docs/backup.md](docs/backup.md). Resumo: `scriptsackup.bat` gera um arquivo em `backups/` (fora do Git) e `scriptsestaurar.bat <arquivo>` restaura num banco separado para conferência.
 
 ## Visual e navegação
 

@@ -149,6 +149,7 @@ public class TelaHistoricoVendas extends javax.swing.JPanel implements Navegavel
         txtDataFim = new javax.swing.JTextField();
         btnFiltrar = new javax.swing.JButton();
         btnLimpar = new javax.swing.JButton();
+        btnRecibo = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         tabelaVendas = new javax.swing.JTable();
         painelItens = new javax.swing.JPanel();
@@ -217,6 +218,14 @@ public class TelaHistoricoVendas extends javax.swing.JPanel implements Navegavel
         });
         painelFiltro.add(btnLimpar);
 
+        btnRecibo.setText("Imprimir recibo");
+        btnRecibo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnReciboActionPerformed(evt);
+            }
+        });
+        painelFiltro.add(btnRecibo);
+
         painelCorpo.add(painelFiltro, java.awt.BorderLayout.PAGE_START);
 
         jScrollPane1.setViewportView(tabelaVendas);
@@ -241,6 +250,20 @@ public class TelaHistoricoVendas extends javax.swing.JPanel implements Navegavel
 
     }// </editor-fold>//GEN-END:initComponents
 
+    private void btnReciboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReciboActionPerformed
+        int linha = tabelaVendas.getSelectedRow();
+        if (linha < 0 || linha >= pedidos.size()) {
+            JOptionPane.showMessageDialog(this, "Selecione uma venda na tabela.");
+            return;
+        }
+        Pedido p = pedidos.get(linha);
+        if (p.isAvulsa()) {
+            JOptionPane.showMessageDialog(this, "Vendas antigas (anteriores ao controle de pedidos) não têm recibo.");
+            return;
+        }
+        impressao.Impressao.recibo(this, p.getId());
+    }//GEN-LAST:event_btnReciboActionPerformed
+
 
     private void btnFiltrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFiltrarActionPerformed
         carregarVendas();
@@ -263,6 +286,7 @@ public class TelaHistoricoVendas extends javax.swing.JPanel implements Navegavel
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnFiltrar;
     private javax.swing.JButton btnLimpar;
+    private javax.swing.JButton btnRecibo;
     private javax.swing.JButton btnVoltar;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;

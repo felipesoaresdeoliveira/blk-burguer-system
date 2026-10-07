@@ -225,6 +225,14 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnEntregueActionPerformed"/>
               </Events>
             </Component>
+            <Component class="javax.swing.JButton" name="btnImprimir">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Imprimir"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnImprimirActionPerformed"/>
+              </Events>
+            </Component>
             <Component class="javax.swing.JButton" name="btnReceber">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Receber"/>

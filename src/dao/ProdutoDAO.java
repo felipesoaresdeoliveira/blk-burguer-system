@@ -59,6 +59,19 @@ public class ProdutoDAO {
             try {
                 int id = produto.getId();
                 if (id > 0) {
+                    double precoAnterior = -1;
+                    try (PreparedStatement pst = con.prepareStatement("SELECT preco FROM \"Produto\" WHERE id = ? FOR UPDATE")) {
+                        pst.setInt(1, id);
+                        try (ResultSet rs = pst.executeQuery()) {
+                            if (rs.next()) {
+                                precoAnterior = rs.getDouble(1);
+                            }
+                        }
+                    }
+                    if (precoAnterior >= 0 && Math.round(precoAnterior * 100) != Math.round(produto.getPreco() * 100)) {
+                        service.Auditoria.registrar(con, entidades.AcaoAuditoria.PRECO_ALTERADO, produto.getNome(),
+                                String.format("R$ %.2f → R$ %.2f", precoAnterior, produto.getPreco()));
+                    }
                     try (PreparedStatement pst = con.prepareStatement(
                             "UPDATE \"Produto\" SET nome = ?, tipo = ?, preco = ? WHERE id = ?")) {
                         pst.setString(1, produto.getNome());

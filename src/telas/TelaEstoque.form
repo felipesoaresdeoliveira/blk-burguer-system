@@ -356,6 +356,22 @@
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnAjustarActionPerformed"/>
                   </Events>
                 </Component>
+                <Component class="javax.swing.JButton" name="btnPerda">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Perda"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnPerdaActionPerformed"/>
+                  </Events>
+                </Component>
+                <Component class="javax.swing.JButton" name="btnHistorico">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Histórico"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnHistoricoActionPerformed"/>
+                  </Events>
+                </Component>
                 <Component class="javax.swing.JButton" name="btnExcluir">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Excluir"/>

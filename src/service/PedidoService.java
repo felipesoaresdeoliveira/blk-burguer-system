@@ -5,6 +5,7 @@ import dao.AdicionalDAO;
 import dao.CaixaDAO;
 import dao.PedidoDAO;
 import dao.VendaDAO;
+import entidades.AcaoAuditoria;
 import entidades.Adicional;
 import entidades.FormaPagamento;
 import entidades.Modulo;
@@ -251,6 +252,56 @@ public class PedidoService {
         });
     }
 
+    // ------------------------------------------------------------ desconto
+
+    /**
+     * Aplica (ou troca) o desconto do pedido aberto (#18). Em porcentagem, o
+     * valor é calculado sobre o subtotal (itens + taxa de entrega). O desconto
+     * não pode passar do subtotal nem deixar o total abaixo do que já foi pago.
+     * Desconto 0 remove o desconto. Retorna o pedido atualizado.
+     */
+    public Pedido aplicarDesconto(int pedidoId, double valor, boolean percentual) throws SQLException {
+        Sessao.exigir(Modulo.CAIXA);
+        semEstoque(con -> {
+            Pedido p = pedidoAberto(con, pedidoId);
+            aplicarDescontoEm(con, p, calcularDesconto(p.getSubtotal(), valor, percentual));
+            return null;
+        });
+        return pedidoDAO.buscar(pedidoId);
+    }
+
+    /** Desconto em reais a partir de um valor ou porcentagem, validado contra o subtotal. */
+    public static double calcularDesconto(double subtotal, double valor, boolean percentual) {
+        if (valor < 0) {
+            throw new IllegalArgumentException("O desconto não pode ser negativo.");
+        }
+        if (percentual && valor > 100) {
+            throw new IllegalArgumentException("O desconto não pode passar de 100%.");
+        }
+        double desconto = VendaService.arredondar(percentual ? subtotal * valor / 100 : valor);
+        if (desconto > VendaService.arredondar(subtotal)) {
+            throw new IllegalArgumentException("O desconto (" + String.format("R$ %.2f", desconto)
+                    + ") é maior que o valor da venda (" + String.format("R$ %.2f", subtotal) + ").");
+        }
+        return desconto;
+    }
+
+    private void aplicarDescontoEm(Connection con, Pedido p, double desconto) throws SQLException {
+        double novoTotal = VendaService.arredondar(p.getSubtotal() - desconto);
+        if (novoTotal < VendaService.arredondar(p.getPago())) {
+            throw new IllegalArgumentException("Já foram pagos " + String.format("R$ %.2f", p.getPago())
+                    + "; o desconto deixaria o total abaixo disso.");
+        }
+        if (VendaService.arredondar(desconto - p.getDesconto()) == 0) {
+            return;
+        }
+        pedidoDAO.atualizar(con, p.getId(), "desconto = ?", desconto);
+        pedidoDAO.recalcularTotal(con, p.getId());
+        Auditoria.registrar(con, AcaoAuditoria.DESCONTO, "Pedido " + p.getId(),
+                String.format("R$ %.2f de desconto (subtotal R$ %.2f, total R$ %.2f) - %s",
+                        desconto, p.getSubtotal(), novoTotal, p.getDescricao()));
+    }
+
     // ------------------------------------------------------------ pagamento
 
     /**
@@ -307,6 +358,12 @@ public class PedidoService {
      */
     public Pedido vendaBalcao(List<Venda> itens, FormaPagamento forma, double recebido, int clienteId,
             boolean paraViagem, int mesaId, String nome) throws SQLException, EstoqueInsuficienteException {
+        return vendaBalcao(itens, forma, recebido, clienteId, paraViagem, mesaId, nome, 0);
+    }
+
+    /** Igual à anterior, com desconto em reais sobre o total dos itens (#18). */
+    public Pedido vendaBalcao(List<Venda> itens, FormaPagamento forma, double recebido, int clienteId,
+            boolean paraViagem, int mesaId, String nome, double desconto) throws SQLException, EstoqueInsuficienteException {
         Sessao.exigir(Modulo.VENDA_BALCAO);
         if (forma == null) {
             throw new IllegalArgumentException("Escolha a forma de pagamento.");
@@ -322,6 +379,10 @@ public class PedidoService {
             novo.setIdentificacao(nome);
             int pedidoId = abrirEm(con, novo);
             lancarEm(con, pedidoId, itens);
+            if (desconto > 0) {
+                Pedido lancado = pedidoDAO.buscar(con, pedidoId);
+                aplicarDescontoEm(con, lancado, calcularDesconto(lancado.getSubtotal(), desconto, false));
+            }
             double total = pedidoDAO.buscar(con, pedidoId).getTotal();
             pagarEm(con, pedidoId, forma, total, forma == FormaPagamento.DINHEIRO ? recebido : total);
             return pedidoId;
@@ -343,6 +404,8 @@ public class PedidoService {
                 devolverEstoque(con, item);
             }
             pedidoDAO.atualizar(con, pedidoId, "situacao = 'CANCELADO', fechado_em = NOW(), conta_solicitada = FALSE");
+            Auditoria.registrar(con, AcaoAuditoria.PEDIDO_CANCELADO, "Pedido " + pedidoId,
+                    p.getDescricao() + " - " + p.getItens().size() + " item(ns), " + String.format("R$ %.2f", p.getTotal()));
             try (java.sql.PreparedStatement pst = con.prepareStatement(
                     "UPDATE \"Venda\" SET status_cozinha = NULL WHERE pedido_id = ?")) {
                 pst.setInt(1, pedidoId);

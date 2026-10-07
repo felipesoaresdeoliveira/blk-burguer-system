@@ -45,7 +45,8 @@ public final class Acabamento {
             {"Saiu para entrega", "truck"}, {"Entregue", "circle-check"}, {"Taxa de entrega", "truck"},
             {"Imprimir", "printer"}, {"Abrir na TV", "maximize"}, {"Sair", "log-out"}, {"Iniciar preparo", "chef-hat"},
             {"Marcar como pronto", "circle-check"}, {"Abrir comanda", "clipboard-list"},
-            {"Entrar", "log-in"},
+            {"Entrar", "log-in"}, {"Perda", "triangle-alert"}, {"Histórico", "history"},
+            {"Dia anterior", "arrow-left"}, {"Hoje", "calendar-check"}, {"Desconto", "percent"},
         };
         for (String[] par : m) {
             ICONES.put(par[0], par[1]);
@@ -136,10 +137,12 @@ public final class Acabamento {
     /** Cor do selo conforme o texto do status. */
     public static Color corStatus(String s) {
         String t = s.toLowerCase();
-        if (t.contains("sem estoque") || t.contains("cancel") || t.contains("atras") || t.contains("desativ")) {
+        if (t.contains("sem estoque") || t.contains("cancel") || t.contains("atras") || t.contains("desativ")
+                || t.contains("diverg")) {
             return Tema.PERIGO;
         }
-        if (t.contains("baixo") || t.contains("conta") || t.contains("aguard") || t.contains("preparo")) {
+        if (t.contains("baixo") || t.contains("conta") || t.contains("aguard") || t.contains("preparo")
+                || t.equals("aberto")) {
             return Tema.AVISO;
         }
         if (t.equals("ok") || t.contains("pago") || t.contains("pronto") || t.contains("entregue")

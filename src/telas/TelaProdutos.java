@@ -540,6 +540,7 @@ public class TelaProdutos extends javax.swing.JPanel implements Navegavel {
         }
         try {
             produtoDAO.excluir(produtoSelecionadoId);
+            service.Auditoria.registrar(entidades.AcaoAuditoria.PRODUTO_EXCLUIDO, campoNome.getText().trim(), null);
             Aviso.sucesso(this, "Produto excluído");
             limparCampos();
             montaTabelaProdutos();

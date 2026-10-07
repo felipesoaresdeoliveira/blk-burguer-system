@@ -125,7 +125,9 @@ public class TelaRelatorio extends javax.swing.JPanel implements Navegavel {
                     dashboardDAO.faturamentoPorDia(de, ate),
                     dashboardDAO.porFormaPagamento(de, ate),
                     dashboardDAO.maisVendidos(de, ate, 500),
-                    dashboardDAO.estoqueBaixo()
+                    dashboardDAO.estoqueBaixo(),
+                    new service.DespesaService().total(de, ate),
+                    new service.EstoqueService().totalPerdas(de, ate)
                 };
             }
 
@@ -137,6 +139,7 @@ public class TelaRelatorio extends javax.swing.JPanel implements Navegavel {
                     Object[] r = get();
                     String rotuloPeriodo = de.equals(ate) ? de.format(DATA) : de.format(DATA) + " a " + ate.format(DATA);
                     mostrarIndicadores((DashboardDAO.Resumo) r[0], (DashboardDAO.Resumo) r[1], (List<Estoque>) r[5]);
+                    mostrarResultado(((DashboardDAO.Resumo) r[0]).faturamento, (Double) r[6], (Double) r[7]);
                     mostrarFaturamento((List<DashboardDAO.Linha>) r[2], rotuloPeriodo, dias);
                     mostrarPagamentos((Map<FormaPagamento, DashboardDAO.Linha>) r[3], rotuloPeriodo);
                     mostrarProdutos((List<DashboardDAO.Linha>) r[4], ((DashboardDAO.Resumo) r[0]).faturamento);
@@ -145,6 +148,14 @@ public class TelaRelatorio extends javax.swing.JPanel implements Navegavel {
                 }
             }
         }.execute();
+    }
+
+    /** Faturamento menos despesas (#40) e perdas de estoque (#34) do período. */
+    private void mostrarResultado(double faturamento, double despesas, double perdas) {
+        double resultado = Math.round((faturamento - despesas - perdas) * 100) / 100.0;
+        cardResultado.setValor(Tema.reais(resultado));
+        cardResultado.setTendencia(resultado >= 0 ? CartaoIndicador.Tendencia.NEUTRA : CartaoIndicador.Tendencia.AVISO);
+        cardResultado.setDetalhe("Despesas " + Tema.reais(despesas) + " | perdas " + Tema.reais(perdas));
     }
 
     /** Variação em relação ao período anterior, com seta e cor (não só cor). */
@@ -166,8 +177,6 @@ public class TelaRelatorio extends javax.swing.JPanel implements Navegavel {
         comparar(cardVendas, atual.vendas, anterior.vendas, "%.0f");
         cardTicket.setValor(Tema.reais(atual.ticketMedio()));
         comparar(cardTicket, atual.ticketMedio(), anterior.ticketMedio(), "R$ %,.2f");
-        cardItens.setValor(String.valueOf(atual.itens));
-        comparar(cardItens, atual.itens, anterior.itens, "%.0f");
         cardEstoque.setValor(String.valueOf(baixo.size()));
         cardEstoque.setTendencia(baixo.isEmpty() ? CartaoIndicador.Tendencia.NEUTRA : CartaoIndicador.Tendencia.AVISO);
         cardEstoque.setDetalhe(baixo.isEmpty() ? "Todos acima do mínimo" : (baixo.size() == 1 ? "item para repor" : "itens para repor"));
@@ -267,7 +276,7 @@ public class TelaRelatorio extends javax.swing.JPanel implements Navegavel {
         cardFaturamento = new ui.CartaoIndicador();
         cardVendas = new ui.CartaoIndicador();
         cardTicket = new ui.CartaoIndicador();
-        cardItens = new ui.CartaoIndicador();
+        cardResultado = new ui.CartaoIndicador();
         cardEstoque = new ui.CartaoIndicador();
         painelGraficos = new javax.swing.JPanel();
         graficoFaturamento = new ui.GraficoColunas();
@@ -348,8 +357,8 @@ public class TelaRelatorio extends javax.swing.JPanel implements Navegavel {
         cardTicket.setTitulo("Ticket médio");
         painelIndicadores.add(cardTicket);
 
-        cardItens.setTitulo("Itens vendidos");
-        painelIndicadores.add(cardItens);
+        cardResultado.setTitulo("Resultado");
+        painelIndicadores.add(cardResultado);
 
         cardEstoque.setTitulo("Estoque baixo agora");
         painelIndicadores.add(cardEstoque);
@@ -400,7 +409,7 @@ public class TelaRelatorio extends javax.swing.JPanel implements Navegavel {
     private javax.swing.JButton btnVoltar;
     private ui.CartaoIndicador cardEstoque;
     private ui.CartaoIndicador cardFaturamento;
-    private ui.CartaoIndicador cardItens;
+    private ui.CartaoIndicador cardResultado;
     private ui.CartaoIndicador cardTicket;
     private ui.CartaoIndicador cardVendas;
     private javax.swing.JComboBox<String> cmbPeriodo;

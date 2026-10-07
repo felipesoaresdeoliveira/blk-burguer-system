@@ -223,6 +223,8 @@ public class Login extends javax.swing.JFrame {
                     entidades.Usuario logado = get();
                     if (logado != null) {
                         service.Sessao.iniciar(logado);
+                        new Thread(() -> service.Auditoria.registrar(entidades.AcaoAuditoria.LOGIN, logado.getUsuario(),
+                                "Perfil " + logado.getPerfil())).start();
                         Main.abrirInicio();
                         dispose();
                     } else {
