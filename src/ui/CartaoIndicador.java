@@ -68,10 +68,17 @@ public class CartaoIndicador extends JComponent {
         int y = 16 + fm.getAscent();
         g.drawString(titulo, x, y);
 
-        g.setFont(PainelCartao.fonte(Font.BOLD, principal ? 30f : 26f));
+        // Valores grandes (R$ 12.345,67) diminuem a fonte para caber inteiros, até um limite.
+        float tamanho = principal ? 30f : 26f;
+        g.setFont(PainelCartao.fonte(Font.BOLD, tamanho));
+        int alturaBase = g.getFontMetrics().getAscent();
+        while (tamanho > 17f && g.getFontMetrics().stringWidth(valor) > w - x - 14) {
+            tamanho -= 1f;
+            g.setFont(PainelCartao.fonte(Font.BOLD, tamanho));
+        }
         g.setColor(Tema.TEXTO);
         fm = g.getFontMetrics();
-        y += 8 + fm.getAscent();
+        y += 8 + alturaBase;
         g.drawString(ajustar(valor, fm, w - x - 14), x, y);
 
         if (detalhe != null && !detalhe.isEmpty()) {

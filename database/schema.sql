@@ -231,6 +231,10 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS auditoria_bloqueio ON "Auditoria";
 CREATE TRIGGER auditoria_bloqueio BEFORE UPDATE OR DELETE ON "Auditoria"
     FOR EACH ROW EXECUTE FUNCTION auditoria_somente_leitura();
+-- TRUNCATE não dispara gatilhos de linha: bloqueado à parte.
+DROP TRIGGER IF EXISTS auditoria_bloqueio_truncate ON "Auditoria";
+CREATE TRIGGER auditoria_bloqueio_truncate BEFORE TRUNCATE ON "Auditoria"
+    FOR EACH STATEMENT EXECUTE FUNCTION auditoria_somente_leitura();
 
 -- Despesas operacionais (#40)
 CREATE TABLE IF NOT EXISTS "Despesa" (
