@@ -32,31 +32,16 @@ public class PedidoService {
     private final CaixaDAO caixaDAO = new CaixaDAO();
     private final AdicionalDAO adicionalDAO = new AdicionalDAO();
 
-    /** Executa um bloco em transação: commit no fim ou rollback em qualquer erro. */
-    private interface Transacao<T> {
-        T executar(Connection con) throws SQLException, EstoqueInsuficienteException;
+    /** Abre uma conexão já em modo transação: nada vale até o commit. */
+    private Connection iniciar() throws SQLException {
+        Connection con = ConexaoBD.getConnection();
+        con.setAutoCommit(false);
+        return con;
     }
 
-    private <T> T emTransacao(Transacao<T> bloco) throws SQLException, EstoqueInsuficienteException {
-        try (Connection con = ConexaoBD.getConnection()) {
-            con.setAutoCommit(false);
-            try {
-                T resultado = bloco.executar(con);
-                con.commit();
-                return resultado;
-            } catch (SQLException | EstoqueInsuficienteException | RuntimeException e) {
-                con.rollback();
-                throw e;
-            }
-        }
-    }
-
-    private <T> T semEstoque(Transacao<T> bloco) throws SQLException {
-        try {
-            return emTransacao(bloco);
-        } catch (EstoqueInsuficienteException e) {
-            throw new IllegalStateException(e.getMessage(), e);
-        }
+    /** Desfaz tudo o que foi feito na transação (usado quando dá erro). */
+    private void desfazer(Connection con) throws SQLException {
+        con.rollback();
     }
 
     // ------------------------------------------------------------ abertura
@@ -65,7 +50,17 @@ public class PedidoService {
     public Pedido abrir(Pedido novo) throws SQLException {
         Sessao.exigir(Modulo.PEDIDOS);
         validarAbertura(novo);
-        int id = semEstoque(con -> abrirEm(con, novo));
+        int id;
+        Connection con = iniciar();
+        try {
+            id = abrirEm(con, novo);
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            desfazer(con);
+            throw e;
+        } finally {
+            con.close();
+        }
         return pedidoDAO.buscar(id);
     }
 
@@ -101,12 +96,18 @@ public class PedidoService {
      * Lança itens no pedido aberto: confere o estoque somando o consumo de
      * todos os itens, dá baixa e envia para a cozinha o que não é bebida.
      */
-    public Pedido lancarItens(int pedidoId, List<Venda> itens) throws SQLException, EstoqueInsuficienteException {
+    public Pedido lancarItens(int pedidoId, List<Venda> itens) throws SQLException {
         Sessao.exigir(Modulo.PEDIDOS);
-        emTransacao(con -> {
+        Connection con = iniciar();
+        try {
             lancarEm(con, pedidoId, itens);
-            return null;
-        });
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            desfazer(con);
+            throw e;
+        } finally {
+            con.close();
+        }
         return pedidoDAO.buscar(pedidoId);
     }
 
@@ -122,7 +123,7 @@ public class PedidoService {
         return p;
     }
 
-    private void lancarEm(Connection con, int pedidoId, List<Venda> itens) throws SQLException, EstoqueInsuficienteException {
+    private void lancarEm(Connection con, int pedidoId, List<Venda> itens) throws SQLException {
         if (itens.isEmpty()) {
             throw new IllegalArgumentException("Adicione pelo menos um item.");
         }
@@ -178,7 +179,8 @@ public class PedidoService {
     /** Remove um item que a cozinha ainda não começou e devolve o estoque. */
     public Pedido removerItem(int pedidoId, int itemId) throws SQLException {
         Sessao.exigir(Modulo.PEDIDOS);
-        semEstoque(con -> {
+        Connection con = iniciar();
+        try {
             Pedido p = pedidoAberto(con, pedidoId);
             Venda item = pedidoDAO.item(con, itemId);
             if (item == null || p.getItens().stream().noneMatch(v -> v.getId() == itemId)) {
@@ -190,8 +192,13 @@ public class PedidoService {
             devolverEstoque(con, item);
             pedidoDAO.removerItem(con, itemId);
             pedidoDAO.recalcularTotal(con, pedidoId);
-            return null;
-        });
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            desfazer(con);
+            throw e;
+        } finally {
+            con.close();
+        }
         return pedidoDAO.buscar(pedidoId);
     }
 
@@ -233,23 +240,35 @@ public class PedidoService {
 
     public void solicitarConta(int pedidoId, boolean solicitada) throws SQLException {
         Sessao.exigir(Modulo.MESAS);
-        semEstoque(con -> {
+        Connection con = iniciar();
+        try {
             pedidoAberto(con, pedidoId);
             pedidoDAO.atualizar(con, pedidoId, "conta_solicitada = ?", solicitada);
-            return null;
-        });
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            desfazer(con);
+            throw e;
+        } finally {
+            con.close();
+        }
     }
 
     public void transferirMesa(int pedidoId, int novaMesaId) throws SQLException {
         Sessao.exigir(Modulo.MESAS);
-        semEstoque(con -> {
+        Connection con = iniciar();
+        try {
             Pedido p = pedidoAberto(con, pedidoId);
             if (p.getTipo() != TipoPedido.MESA) {
                 throw new IllegalArgumentException("Só comandas de mesa podem ser transferidas.");
             }
             pedidoDAO.atualizar(con, pedidoId, "mesa_id = ?", novaMesaId);
-            return null;
-        });
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            desfazer(con);
+            throw e;
+        } finally {
+            con.close();
+        }
     }
 
     // ------------------------------------------------------------ desconto
@@ -262,11 +281,17 @@ public class PedidoService {
      */
     public Pedido aplicarDesconto(int pedidoId, double valor, boolean percentual) throws SQLException {
         Sessao.exigir(Modulo.CAIXA);
-        semEstoque(con -> {
+        Connection con = iniciar();
+        try {
             Pedido p = pedidoAberto(con, pedidoId);
             aplicarDescontoEm(con, p, calcularDesconto(p.getSubtotal(), valor, percentual));
-            return null;
-        });
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            desfazer(con);
+            throw e;
+        } finally {
+            con.close();
+        }
         return pedidoDAO.buscar(pedidoId);
     }
 
@@ -311,10 +336,16 @@ public class PedidoService {
      */
     public Pedido receberPagamento(int pedidoId, FormaPagamento forma, double valor, double recebido) throws SQLException {
         Sessao.exigir(Modulo.CAIXA);
-        semEstoque(con -> {
+        Connection con = iniciar();
+        try {
             pagarEm(con, pedidoId, forma, valor, recebido);
-            return null;
-        });
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            desfazer(con);
+            throw e;
+        } finally {
+            con.close();
+        }
         return pedidoDAO.buscar(pedidoId);
     }
 
@@ -357,18 +388,20 @@ public class PedidoService {
      * @param nome nome para chamar o cliente (opcional)
      */
     public Pedido vendaBalcao(List<Venda> itens, FormaPagamento forma, double recebido, int clienteId,
-            boolean paraViagem, int mesaId, String nome) throws SQLException, EstoqueInsuficienteException {
+            boolean paraViagem, int mesaId, String nome) throws SQLException {
         return vendaBalcao(itens, forma, recebido, clienteId, paraViagem, mesaId, nome, 0);
     }
 
     /** Igual à anterior, com desconto em reais sobre o total dos itens (#18). */
     public Pedido vendaBalcao(List<Venda> itens, FormaPagamento forma, double recebido, int clienteId,
-            boolean paraViagem, int mesaId, String nome, double desconto) throws SQLException, EstoqueInsuficienteException {
+            boolean paraViagem, int mesaId, String nome, double desconto) throws SQLException {
         Sessao.exigir(Modulo.VENDA_BALCAO);
         if (forma == null) {
             throw new IllegalArgumentException("Escolha a forma de pagamento.");
         }
-        int id = emTransacao(con -> {
+        int id;
+        Connection con = iniciar();
+        try {
             if (caixaDAO.idAberto(con) == 0) {
                 throw new IllegalStateException("Abra o caixa antes de registrar vendas.");
             }
@@ -377,16 +410,21 @@ public class PedidoService {
             novo.setClienteId(clienteId);
             novo.setMesaId(paraViagem ? 0 : mesaId);
             novo.setIdentificacao(nome);
-            int pedidoId = abrirEm(con, novo);
-            lancarEm(con, pedidoId, itens);
+            id = abrirEm(con, novo);
+            lancarEm(con, id, itens);
             if (desconto > 0) {
-                Pedido lancado = pedidoDAO.buscar(con, pedidoId);
+                Pedido lancado = pedidoDAO.buscar(con, id);
                 aplicarDescontoEm(con, lancado, calcularDesconto(lancado.getSubtotal(), desconto, false));
             }
-            double total = pedidoDAO.buscar(con, pedidoId).getTotal();
-            pagarEm(con, pedidoId, forma, total, forma == FormaPagamento.DINHEIRO ? recebido : total);
-            return pedidoId;
-        });
+            double total = pedidoDAO.buscar(con, id).getTotal();
+            pagarEm(con, id, forma, total, forma == FormaPagamento.DINHEIRO ? recebido : total);
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            desfazer(con);
+            throw e;
+        } finally {
+            con.close();
+        }
         return pedidoDAO.buscar(id);
     }
 
@@ -395,7 +433,8 @@ public class PedidoService {
     /** Cancela um pedido sem pagamentos e devolve o estoque dos itens. */
     public void cancelar(int pedidoId) throws SQLException {
         Sessao.exigir(Modulo.CANCELAMENTOS);
-        semEstoque(con -> {
+        Connection con = iniciar();
+        try {
             Pedido p = pedidoAberto(con, pedidoId);
             if (p.getPago() > 0) {
                 throw new IllegalStateException("O pedido já tem pagamentos e não pode ser cancelado.");
@@ -411,8 +450,13 @@ public class PedidoService {
                 pst.setInt(1, pedidoId);
                 pst.executeUpdate();
             }
-            return null;
-        });
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            desfazer(con);
+            throw e;
+        } finally {
+            con.close();
+        }
     }
 
     // ------------------------------------------------------------ cozinha e entrega
@@ -448,7 +492,8 @@ public class PedidoService {
     /** Delivery: SAIU_PARA_ENTREGA ou ENTREGUE. */
     public void atualizarEntrega(int pedidoId, String status) throws SQLException {
         Sessao.exigir(Modulo.PEDIDOS);
-        semEstoque(con -> {
+        Connection con = iniciar();
+        try {
             Pedido p = pedidoDAO.buscar(con, pedidoId);
             if (p == null || p.getTipo() != TipoPedido.DELIVERY) {
                 throw new IllegalArgumentException("Só pedidos de delivery têm entrega.");
@@ -462,8 +507,13 @@ public class PedidoService {
                     pst.executeUpdate();
                 }
             }
-            return null;
-        });
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            desfazer(con);
+            throw e;
+        } finally {
+            con.close();
+        }
     }
 
     /** Minutos desde o envio à cozinha. */
