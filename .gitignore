@@ -38,3 +38,11 @@ db.properties
 # Backups do banco (dados reais)
 /backups/
 *.backup
+
+# Só no PC (não vai para o GitHub)
+/scripts/
+/teste/
+/docs/backup.md
+/docs/rede.md
+/docs/app-garcom.md
+/docs/ROADMAP.md

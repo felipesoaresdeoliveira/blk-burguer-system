@@ -1,71 +1,46 @@
 # BLK Burguer
 
-Sistema de gestão de hamburgueria feito em **Java (Swing) + PostgreSQL**, para o Projeto Integrador/Extensão 2026.
+Sistema de gestão de hamburgueria feito em Java (Swing) com banco PostgreSQL.
+Projeto Integrador/Extensão 2026.
 
 ## O que o sistema faz
 
-- **Login por perfil**: administrador, gerente, caixa, garçom e cozinha. Cada um vê só o que pode usar.
-- **Vendas**: balcão, mesas (comanda), retirada e delivery, com pagamento dividido e desconto.
-- **Cozinha**: painel para a TV mostrando os pedidos em tempo real.
-- **Caixa**: abrir, sangria, suprimento e fechar com conferência.
-- **Cadastros**: clientes, produtos (com ficha técnica) e estoque (entrada, ajuste e perda).
-- **Gestão**: visão geral com gráficos, relatórios, fechamento do dia, despesas e auditoria.
-- **Impressão**: recibo, conta da mesa e pedido da cozinha.
+- Login com perfis: administrador, gerente, caixa, garçom e cozinha
+- Venda no balcão, mesas (comanda), retirada e delivery
+- Pagamento em dinheiro, pix, débito e crédito (pode dividir)
+- Painel da cozinha com os pedidos
+- Controle de caixa (abrir, sangria, suprimento e fechar)
+- Cadastro de clientes, produtos e estoque
+- Visão geral com gráficos, relatórios, fechamento do dia e despesas
+- Impressão de recibo, conta e pedido da cozinha
 
 ## Como rodar
 
-Precisa de: **JDK 8+**, **Apache Ant** e **PostgreSQL**.
+Precisa de JDK 8 ou superior, Apache Ant e PostgreSQL.
 
-1. Crie o banco `blkburguer` e rode `database/schema.sql`.
-   (Opcional, para ter dados de exemplo: `database/dados-exemplo.sql`.)
+1. Crie o banco `blkburguer` e execute `database/schema.sql`
+   (para ter dados de exemplo, execute também `database/dados-exemplo.sql`).
 2. Copie `db.properties.example` para `db.properties` e coloque a senha do seu PostgreSQL.
-3. Crie o primeiro usuário no banco (veja o final de `database/schema.sql`).
-4. Rode:
+3. Crie o primeiro usuário no banco (exemplo no final do `schema.sql`).
+4. Rode `ant run`.
 
-```bash
-ant run
-```
-
-O Ant baixa as bibliotecas para a pasta `lib/` na primeira vez. No NetBeans, rode `ant deps` antes de abrir o projeto.
+No NetBeans, rode `ant deps` uma vez para baixar as bibliotecas da pasta `lib/`.
 
 ## Como o código está organizado
 
-O código segue um caminho simples, de cima para baixo:
-
 ```text
-telas  →  service  →  dao  →  PostgreSQL
-(o que o usuário vê)  (regras)  (SQL)
+telas  ->  service  ->  dao  ->  PostgreSQL
 ```
 
-| Pasta | Para que serve |
+| Pasta | O que tem |
 |---|---|
-| `src/telas` | Telas (Swing). Só mostram dados e chamam os serviços. |
-| `src/service` | Regras do negócio: estoque, pagamento, desconto, permissões. |
-| `src/dao` | Todo o SQL do sistema (um DAO para cada assunto). |
-| `src/entidades` | Classes simples que representam os dados (Pedido, Produto...). |
-| `src/ui` | Cores, ícones, gráficos e componentes visuais. |
-| `src/impressao` | Montagem dos documentos impressos. |
-| `src/config` | Conexão com o banco (`ConexaoBD`). |
-| `database` | Script das tabelas e dados de exemplo. |
-| `teste` | Teste simples das regras de venda. |
-| `docs` | Documentos extras (rede, backup). |
+| `src/telas` | As telas (Swing) |
+| `src/service` | As regras do sistema (estoque, pagamento, permissões) |
+| `src/dao` | Os comandos SQL |
+| `src/entidades` | As classes que representam os dados (Pedido, Produto...) |
+| `src/ui` | Cores, ícones e gráficos |
+| `src/impressao` | Os documentos para imprimir |
+| `src/config` | Conexão com o banco |
+| `database` | Tabelas e dados de exemplo |
 
-Mais detalhes em [docs/estrutura.md](docs/estrutura.md).
-
-## Perfis de acesso
-
-| Perfil | O que acessa |
-|---|---|
-| Administrador | Tudo, inclusive contas de usuário e auditoria |
-| Gerente | Tudo, menos contas de usuário e auditoria |
-| Caixa | Vendas, caixa, pedidos, mesas, clientes e histórico |
-| Garçom | Pedidos, mesas e clientes |
-| Cozinha | Só o painel da cozinha |
-
-As senhas são guardadas com hash (PBKDF2), nunca em texto.
-
-## Para desenvolver
-
-- Use as branches `feature/...` e abra Pull Request para `develop`.
-- Não suba `build/`, `dist/`, `.jar`, `db.properties` nem backups.
-- Veja também [CONTRIBUTING.md](CONTRIBUTING.md).
+Veja mais em [docs/estrutura.md](docs/estrutura.md).
