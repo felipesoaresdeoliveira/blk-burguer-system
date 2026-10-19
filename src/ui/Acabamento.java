@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.swing.JButton;
-import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JViewport;
@@ -219,16 +218,8 @@ public final class Acabamento {
             g.setFont(getFont().deriveFont(Font.PLAIN, 13f));
             g.setColor(Tema.TEXTO_FRACO);
             FontMetrics fm = g.getFontMetrics();
-            int alturaCab = tabela.getTableHeader() != null ? 0 : 0;
-            g.drawString(texto, (getWidth() - fm.stringWidth(texto)) / 2, Math.max(48, getHeight() / 2) + alturaCab);
+            g.drawString(texto, (getWidth() - fm.stringWidth(texto)) / 2, Math.max(48, getHeight() / 2));
             g.dispose();
         }
-    }
-
-    /** Rótulo de texto auxiliar padronizado. */
-    public static JLabel rotuloFraco(String texto) {
-        JLabel l = new JLabel(texto);
-        l.setForeground(Tema.TEXTO_FRACO);
-        return l;
     }
 }
