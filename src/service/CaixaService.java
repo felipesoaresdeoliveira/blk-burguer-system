@@ -1,6 +1,7 @@
 package service;
 
 import dao.CaixaDAO;
+import entidades.AcaoAuditoria;
 import entidades.Caixa;
 import entidades.FormaPagamento;
 import entidades.Modulo;
@@ -26,7 +27,9 @@ public class CaixaService {
         if (valorInicial < 0) {
             throw new IllegalArgumentException("O valor inicial não pode ser negativo.");
         }
-        return caixaDAO.carregar(caixaDAO.abrir(VendaService.arredondar(valorInicial), Sessao.usuarioId()));
+        int id = caixaDAO.abrir(VendaService.arredondar(valorInicial), Sessao.usuarioId());
+        Auditoria.registrar(AcaoAuditoria.CAIXA_ABERTO, "Caixa " + id, String.format("Fundo de troco R$ %.2f", valorInicial));
+        return caixaDAO.carregar(id);
     }
 
     public void movimentar(String tipo, double valor, String motivo) throws SQLException {
@@ -46,6 +49,8 @@ public class CaixaService {
                     "Sangria maior que o dinheiro em caixa (R$ %.2f).", caixa.getEsperado(FormaPagamento.DINHEIRO)));
         }
         caixaDAO.movimentar(caixa.getId(), tipo, VendaService.arredondar(valor), motivo.trim(), Sessao.usuarioId());
+        Auditoria.registrar(SANGRIA.equals(tipo) ? AcaoAuditoria.SANGRIA : AcaoAuditoria.SUPRIMENTO, "Caixa " + caixa.getId(),
+                String.format("R$ %.2f - %s", valor, motivo.trim()));
     }
 
     /** Fecha o caixa com os valores contados e retorna o caixa fechado (com diferenças). */
@@ -62,7 +67,10 @@ public class CaixaService {
             }
         }
         caixaDAO.fechar(caixa.getId(), informado, observacao, Sessao.usuarioId());
-        return caixaDAO.carregar(caixa.getId());
+        Caixa fechado = caixaDAO.carregar(caixa.getId());
+        Auditoria.registrar(AcaoAuditoria.CAIXA_FECHADO, "Caixa " + caixa.getId(),
+                String.format("Vendido R$ %.2f, diferença R$ %.2f", fechado.getTotalVendido(), fechado.getDiferencaTotal()));
+        return fechado;
     }
 
     public Caixa carregar(int caixaId) throws SQLException {

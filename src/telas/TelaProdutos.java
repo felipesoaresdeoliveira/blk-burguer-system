@@ -7,8 +7,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.JOptionPane;
+import ui.Tema;
+import ui.Aviso;
+import ui.Acabamento;
+import ui.Icones;
 
-public class TelaProdutos extends javax.swing.JFrame {
+public class TelaProdutos extends javax.swing.JPanel implements Navegavel {
 
     private final dao.ProdutoDAO produtoDAO = new dao.ProdutoDAO();
     private final dao.EstoqueDAO estoqueDAO = new dao.EstoqueDAO();
@@ -140,7 +144,7 @@ public class TelaProdutos extends javax.swing.JFrame {
             return;
         }
         double lucro = preco - custo;
-        java.awt.Color cor = lucro < 0 ? ui.Tema.PERIGO : ui.Tema.SUCESSO;
+        java.awt.Color cor = lucro < 0 ? Tema.PERIGO : Tema.SUCESSO;
         txtValorMargem.setForeground(cor);
         lblMargemPercentual.setForeground(cor);
         txtValorMargem.setText(String.format("%.2f", lucro));
@@ -181,20 +185,26 @@ public class TelaProdutos extends javax.swing.JFrame {
 
     public TelaProdutos() {
         initComponents();
-        ui.Tema.janela(this);
-        ui.Tema.titulo(txtTitle);
-        ui.Tema.secundario(lblSubtitulo, txtSubtitulo2);
-        ui.Tema.primario(btnSalvar);
-        ui.Tema.perigo(btnExcluir);
-        ui.Tema.cartao(painelFicha);
-        ui.Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelLista, painelTopoLista,
+        txtBusca.putClientProperty("JTextField.leadingIcon", Icones.get("search", 16));
+        txtBusca.putClientProperty("JTextField.showClearButton", Boolean.TRUE);
+        btnLimparFiltro.setText("");
+        btnLimparFiltro.setIcon(Icones.get("x", 16));
+        btnLimparFiltro.setToolTipText("Limpar filtros");
+        Acabamento.vazio(tabelaProdutos, "Nenhum produto encontrado");
+        Acabamento.vazio(tabelaIngredientesProd, "Ficha técnica vazia: adicione os ingredientes");
+        Tema.titulo(txtTitle);
+        Tema.secundario(lblSubtitulo, txtSubtitulo2);
+        Tema.primario(btnSalvar);
+        Tema.perigo(btnExcluir);
+        Tema.cartao(painelFicha);
+        Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelLista, painelTopoLista,
                 painelBusca, painelDados, painelPrecoTipo, painelPrecoTipoCampos, painelAddIngrediente,
-                painelQtdIngrediente, painelRodapeFicha, painelResumo, painelBotoes);
+                painelQtdIngrediente, painelRodapeFicha, painelResumoFicha, painelResumo, painelBotoes);
         for (javax.swing.JLabel l : new javax.swing.JLabel[]{jLabel3, txtSubititulo, jLabel1}) {
-            l.setForeground(ui.Tema.TEXTO);
+            l.setForeground(Tema.TEXTO);
         }
-        valorCEstimado.setForeground(ui.Tema.TEXTO);
-        lblAvisoPreco.setForeground(ui.Tema.PERIGO);
+        valorCEstimado.setForeground(Tema.TEXTO);
+        lblAvisoPreco.setForeground(Tema.PERIGO);
         txtBusca.putClientProperty("JTextField.placeholderText", "nome do produto");
         txtBusca.putClientProperty("JTextField.showClearButton", true);
         // Busca e filtro por tipo enquanto o usuário digita/escolhe (#22).
@@ -204,7 +214,6 @@ public class TelaProdutos extends javax.swing.JFrame {
             public void changedUpdate(javax.swing.event.DocumentEvent e) { montaTabelaProdutos(); }
         });
         cmbFiltroTipo.addActionListener(e -> montaTabelaProdutos());
-        ui.Tema.tamanhoPadrao(this);
         ComboboxTipo.addActionListener(e -> filtrarIngredientes());
         carregarIngredientes();
         montaTabelaProdutos();
@@ -269,6 +278,7 @@ public class TelaProdutos extends javax.swing.JFrame {
         jScrollPane2 = new javax.swing.JScrollPane();
         tabelaIngredientesProd = new javax.swing.JTable();
         painelRodapeFicha = new javax.swing.JPanel();
+        painelResumoFicha = new javax.swing.JPanel();
         btnRemoverIngrediente = new javax.swing.JButton();
         painelResumo = new javax.swing.JPanel();
         txtCustoEstimado = new javax.swing.JLabel();
@@ -285,9 +295,7 @@ public class TelaProdutos extends javax.swing.JFrame {
         btnCancelar = new javax.swing.JButton();
         btnExcluir = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Produtos");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -312,7 +320,7 @@ public class TelaProdutos extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -326,7 +334,7 @@ public class TelaProdutos extends javax.swing.JFrame {
         lblBusca.setText("Buscar:");
         painelBusca.add(lblBusca);
 
-        txtBusca.setPreferredSize(new java.awt.Dimension(240, 30));
+        txtBusca.setPreferredSize(new java.awt.Dimension(200, 30));
         painelBusca.add(txtBusca);
 
         lblFiltroTipo.setText("Tipo:");
@@ -357,7 +365,7 @@ public class TelaProdutos extends javax.swing.JFrame {
 
         painelCorpo.add(painelLista, java.awt.BorderLayout.CENTER);
 
-        painelFicha.setPreferredSize(new java.awt.Dimension(500, 0));
+        painelFicha.setPreferredSize(new java.awt.Dimension(450, 0));
         painelFicha.setLayout(new java.awt.BorderLayout(0, 10));
         painelDados.setLayout(new java.awt.GridLayout(0, 1, 0, 4));
         txtSubititulo.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
@@ -420,14 +428,15 @@ public class TelaProdutos extends javax.swing.JFrame {
         jScrollPane2.setViewportView(tabelaIngredientesProd);
         painelFicha.add(jScrollPane2, java.awt.BorderLayout.CENTER);
 
-        painelRodapeFicha.setLayout(new java.awt.GridLayout(0, 1, 0, 6));
+        painelRodapeFicha.setLayout(new java.awt.BorderLayout(0, 10));
+        painelResumoFicha.setLayout(new java.awt.BorderLayout(0, 4));
         btnRemoverIngrediente.setText("Remover ingrediente selecionado");
         btnRemoverIngrediente.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnRemoverIngredienteActionPerformed(evt);
             }
         });
-        painelRodapeFicha.add(btnRemoverIngrediente);
+        painelResumoFicha.add(btnRemoverIngrediente, java.awt.BorderLayout.PAGE_START);
 
         painelResumo.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 6, 0));
         txtCustoEstimado.setText("Custo: R$");
@@ -451,13 +460,15 @@ public class TelaProdutos extends javax.swing.JFrame {
         lblMargemPercentual.setText("");
         painelResumo.add(lblMargemPercentual);
 
-        painelRodapeFicha.add(painelResumo);
+        painelResumoFicha.add(painelResumo, java.awt.BorderLayout.CENTER);
 
         lblAvisoPreco.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         lblAvisoPreco.setText(" ");
-        painelRodapeFicha.add(lblAvisoPreco);
+        painelResumoFicha.add(lblAvisoPreco, java.awt.BorderLayout.PAGE_END);
 
-        painelBotoes.setLayout(new java.awt.GridLayout(1, 5, 6, 0));
+        painelRodapeFicha.add(painelResumoFicha, java.awt.BorderLayout.PAGE_START);
+
+        painelBotoes.setLayout(new java.awt.GridLayout(0, 3, 6, 6));
         btnNovo.setText("Novo");
         btnNovo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -498,15 +509,14 @@ public class TelaProdutos extends javax.swing.JFrame {
         });
         painelBotoes.add(btnExcluir);
 
-        painelRodapeFicha.add(painelBotoes);
+        painelRodapeFicha.add(painelBotoes, java.awt.BorderLayout.PAGE_END);
 
         painelFicha.add(painelRodapeFicha, java.awt.BorderLayout.PAGE_END);
 
         painelCorpo.add(painelFicha, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
 
@@ -530,7 +540,8 @@ public class TelaProdutos extends javax.swing.JFrame {
         }
         try {
             produtoDAO.excluir(produtoSelecionadoId);
-            JOptionPane.showMessageDialog(null, "Produto excluído!");
+            service.Auditoria.registrar(entidades.AcaoAuditoria.PRODUTO_EXCLUIDO, campoNome.getText().trim(), null);
+            Aviso.sucesso(this, "Produto excluído");
             limparCampos();
             montaTabelaProdutos();
             validaCampos("inicio");
@@ -570,7 +581,7 @@ public class TelaProdutos extends javax.swing.JFrame {
             produto.setTipo(ComboboxTipo.getSelectedItem().toString());
             produto.setPreco(preco);
             produtoDAO.salvar(produto, composicao);
-            JOptionPane.showMessageDialog(null, "Salvo com sucesso!");
+            Aviso.sucesso(this, "Produto salvo");
             limparCampos();
             montaTabelaProdutos();
             validaCampos("inicio");
@@ -642,7 +653,7 @@ public class TelaProdutos extends javax.swing.JFrame {
 
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new TelaProdutos().setVisible(true);
+                Main.testar(new TelaProdutos());
             }
         });
     }
@@ -686,6 +697,7 @@ public class TelaProdutos extends javax.swing.JFrame {
     private javax.swing.JPanel painelPrecoTipoCampos;
     private javax.swing.JPanel painelQtdIngrediente;
     private javax.swing.JPanel painelResumo;
+    private javax.swing.JPanel painelResumoFicha;
     private javax.swing.JPanel painelRodapeFicha;
     private javax.swing.JPanel painelTitulo;
     private javax.swing.JPanel painelTopoLista;

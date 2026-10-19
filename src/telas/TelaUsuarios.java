@@ -9,9 +9,10 @@ import javax.swing.JOptionPane;
 import service.Sessao;
 import service.UsuarioService;
 import ui.Tema;
+import ui.Aviso;
 
 /** Contas da equipe (somente administrador): criar, editar perfil, ativar e redefinir senha. */
-public class TelaUsuarios extends javax.swing.JFrame {
+public class TelaUsuarios extends javax.swing.JPanel implements Navegavel {
 
     private final UsuarioService usuarioService = new UsuarioService();
     private List<Usuario> usuarios = new ArrayList<>();
@@ -20,12 +21,11 @@ public class TelaUsuarios extends javax.swing.JFrame {
 
     public TelaUsuarios() {
         initComponents();
-        Tema.janela(this);
         Tema.titulo(lblTitulo);
         Tema.secundario(lblSubtitulo, lblPerfilInfo);
         Tema.primario(btnSalvar);
         lblFormTitulo.setForeground(Tema.TEXTO);
-        getContentPane().setBackground(Tema.FUNDO);
+        setBackground(Tema.FUNDO);
         painelFormulario.setBorder(javax.swing.BorderFactory.createCompoundBorder(
                 javax.swing.BorderFactory.createLineBorder(Tema.BORDA),
                 javax.swing.BorderFactory.createEmptyBorder(16, 18, 18, 18)));
@@ -50,7 +50,6 @@ public class TelaUsuarios extends javax.swing.JFrame {
         });
         carregar();
         novo();
-        Tema.tamanhoPadrao(this);
     }
 
     private void carregar() {
@@ -89,7 +88,7 @@ public class TelaUsuarios extends javax.swing.JFrame {
             }
             modulos.append(m);
         }
-        lblPerfilInfo.setText("<html><div style='width:320px'><b>" + p.resumo() + "</b><br>Acessa: " + modulos + "</div></html>");
+        lblPerfilInfo.setText("<html><div style='width:220px'><b>" + p.resumo() + "</b><br>Acessa: " + modulos + "</div></html>");
     }
 
     private void novo() {
@@ -138,10 +137,10 @@ public class TelaUsuarios extends javax.swing.JFrame {
                     return;
                 }
                 usuarioService.criar(u, senha);
-                JOptionPane.showMessageDialog(this, "Conta \"" + u.getUsuario() + "\" criada como " + u.getPerfil() + ".");
+                Aviso.sucesso(this, "Conta " + u.getUsuario() + " criada como " + u.getPerfil());
             } else {
                 usuarioService.atualizar(u);
-                JOptionPane.showMessageDialog(this, "Conta atualizada.");
+                Aviso.sucesso(this, "Conta atualizada");
             }
             carregar();
             novo();
@@ -178,7 +177,7 @@ public class TelaUsuarios extends javax.swing.JFrame {
         }
         try {
             usuarioService.redefinirSenha(selecionado.getId(), senha);
-            JOptionPane.showMessageDialog(this, "Senha redefinida.");
+            Aviso.sucesso(this, "Senha redefinida");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Usuários", JOptionPane.WARNING_MESSAGE);
         }
@@ -218,9 +217,7 @@ public class TelaUsuarios extends javax.swing.JFrame {
         btnSenha = new javax.swing.JButton();
         btnCancelar = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Usuários");
-        setMinimumSize(new java.awt.Dimension(1000, 640));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -245,14 +242,14 @@ public class TelaUsuarios extends javax.swing.JFrame {
 
         painelCabecalho.add(painelTopoAcoes, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 0));
         scrollUsuarios.setViewportView(tabelaUsuarios);
         painelCorpo.add(scrollUsuarios, java.awt.BorderLayout.CENTER);
 
-        painelFormulario.setPreferredSize(new java.awt.Dimension(380, 0));
+        painelFormulario.setPreferredSize(new java.awt.Dimension(340, 0));
         painelFormulario.setLayout(new java.awt.BorderLayout(0, 14));
         painelCampos.setLayout(new java.awt.GridLayout(0, 1, 0, 4));
         lblFormTitulo.setFont(new java.awt.Font("Segoe UI", 1, 16)); // NOI18N
@@ -330,9 +327,8 @@ public class TelaUsuarios extends javax.swing.JFrame {
 
         painelCorpo.add(painelFormulario, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed

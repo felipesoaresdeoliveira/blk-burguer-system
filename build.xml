@@ -13,10 +13,17 @@
     <property name="flatlaf.version" value="3.7.2"/>
     <property name="flatlaf.jar" value="${lib.dir}/flatlaf-${flatlaf.version}.jar"/>
     <property name="flatlaf.url" value="https://repo1.maven.org/maven2/com/formdev/flatlaf/${flatlaf.version}/flatlaf-${flatlaf.version}.jar"/>
+    <property name="extras.jar" value="${lib.dir}/flatlaf-extras-${flatlaf.version}.jar"/>
+    <property name="extras.url" value="https://repo1.maven.org/maven2/com/formdev/flatlaf-extras/${flatlaf.version}/flatlaf-extras-${flatlaf.version}.jar"/>
+    <property name="jsvg.version" value="2.1.0"/>
+    <property name="jsvg.jar" value="${lib.dir}/jsvg-${jsvg.version}.jar"/>
+    <property name="jsvg.url" value="https://repo1.maven.org/maven2/com/github/weisj/jsvg/${jsvg.version}/jsvg-${jsvg.version}.jar"/>
 
     <path id="app.classpath">
         <pathelement location="${postgresql.jar}"/>
         <pathelement location="${flatlaf.jar}"/>
+        <pathelement location="${extras.jar}"/>
+        <pathelement location="${jsvg.jar}"/>
     </path>
 
     <target name="init">
@@ -32,6 +39,10 @@
                encoding="UTF-8"
                includeantruntime="false"
                classpathref="app.classpath"/>
+        <!-- Ícones SVG e demais recursos que ficam junto do código -->
+        <copy todir="${classes.dir}">
+            <fileset dir="${src.dir}" excludes="**/*.java,**/*.form"/>
+        </copy>
     </target>
 
     <target name="deps" description="Baixa as dependências (driver PostgreSQL e tema FlatLaf) para lib/">
@@ -44,18 +55,22 @@
              dest="${flatlaf.jar}"
              skipexisting="true"
              usetimestamp="true"/>
+        <get src="${extras.url}" dest="${extras.jar}" skipexisting="true" usetimestamp="true"/>
+        <get src="${jsvg.url}" dest="${jsvg.jar}" skipexisting="true" usetimestamp="true"/>
     </target>
 
     <target name="jar" depends="compile" description="Gera dist/ pronta para copiar para outro computador">
         <jar destfile="${dist.dir}/BLK_BURGUER.jar" basedir="${classes.dir}">
             <manifest>
                 <attribute name="Main-Class" value="telas.Login"/>
-                <attribute name="Class-Path" value="lib/postgresql-${postgresql.version}.jar lib/flatlaf-${flatlaf.version}.jar"/>
+                <attribute name="Class-Path" value="lib/postgresql-${postgresql.version}.jar lib/flatlaf-${flatlaf.version}.jar lib/flatlaf-extras-${flatlaf.version}.jar lib/jsvg-${jsvg.version}.jar"/>
             </manifest>
         </jar>
         <copy todir="${dist.dir}/lib">
             <fileset file="${postgresql.jar}"/>
             <fileset file="${flatlaf.jar}"/>
+            <fileset file="${extras.jar}"/>
+            <fileset file="${jsvg.jar}"/>
         </copy>
         <copy file="db.properties.example" todir="${dist.dir}"/>
         <echo file="${dist.dir}/BLK-Burguer.bat">@echo off&#13;&#10;cd /d "%~dp0"&#13;&#10;start "" javaw -jar BLK_BURGUER.jar&#13;&#10;</echo>

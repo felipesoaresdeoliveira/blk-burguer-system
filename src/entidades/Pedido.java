@@ -26,6 +26,7 @@ public class Pedido {
     private String identificacao;
     private int senha;
     private double taxaEntrega;
+    private double desconto;
     private String enderecoEntrega;
     private String statusEntrega;
     private boolean contaSolicitada;
@@ -44,7 +45,7 @@ public class Pedido {
     public FormaPagamento getFormaPagamento() { return formaPagamento; }
     public void setFormaPagamento(FormaPagamento formaPagamento) { this.formaPagamento = formaPagamento; }
 
-    /** Total a pagar: itens + taxa de entrega. */
+    /** Total a pagar: itens + taxa de entrega - desconto. */
     public double getTotal() { return total; }
     public void setTotal(double total) { this.total = total; }
 
@@ -77,6 +78,12 @@ public class Pedido {
 
     public double getTaxaEntrega() { return taxaEntrega; }
     public void setTaxaEntrega(double taxaEntrega) { this.taxaEntrega = taxaEntrega; }
+
+    public double getDesconto() { return desconto; }
+    public void setDesconto(double desconto) { this.desconto = desconto; }
+
+    /** Itens + taxa de entrega, antes do desconto. */
+    public double getSubtotal() { return Math.round((total + desconto) * 100) / 100.0; }
 
     public String getEnderecoEntrega() { return enderecoEntrega; }
     public void setEnderecoEntrega(String enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }

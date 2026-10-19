@@ -1,56 +1,41 @@
-# Estrutura do Projeto — BLK Burguer
+# Estrutura do projeto
 
-## Visão geral
+O sistema é um programa de desktop em **Java 8 + Swing + PostgreSQL**, compilado com **Ant**.
 
-O BLK Burguer é um sistema desktop de gestão de hamburgueria em **Java 8 + Swing + PostgreSQL**, compilado com **Ant**.
+## Caminho de uma venda
 
-A evolução deve reduzir o acoplamento atual entre telas, regras de negócio e SQL sem transformar o projeto acadêmico em uma arquitetura desnecessariamente complexa.
+1. O caixa clica em **Finalizar venda** na tela (`telas/Vendas.java`).
+2. A tela chama `VendaService` (`service`), que confere permissão, estoque e valores.
+3. O serviço usa os DAOs (`dao`) para gravar no PostgreSQL dentro de **uma transação**:
+   se qualquer passo falhar, nada é salvo.
+4. A cozinha enxerga o pedido sozinha, porque a tela dela consulta o banco a cada poucos segundos.
 
-## Arquitetura alvo
+## Pastas
 
-Swing (View) → Controller → Service → Repository/DAO → PostgreSQL
+- `telas/`: uma classe por tela. `Main` é a janela única com o menu lateral.
+- `service/`: regras do negócio. `Sessao` guarda o usuário logado e valida permissões.
+- `dao/`: SQL com `PreparedStatement`. As gravações recebem a `Connection` do serviço para fazer parte da mesma transação.
+- `entidades/`: dados do sistema. `Perfil` e `Modulo` definem o que cada usuário acessa.
+- `ui/`: tema (cores), ícones e gráficos.
+- `impressao/`: documentos imprimíveis.
 
-### view/
-Telas Java Swing e arquivos `.form` existentes. Exibem dados, coletam entradas e disparam ações. Evitar SQL e regras de negócio diretamente nas telas.
+## Transações (como funciona)
 
-### controller/
-Coordena eventos da interface e chama serviços.
+Os serviços que gravam várias coisas juntas seguem sempre o mesmo padrão:
 
-### service/
-Concentra regras como validar estoque, calcular comanda, dividir pagamento, controlar status da mesa e fechar caixa.
-
-### repository/ ou dao/
-Acesso ao PostgreSQL via JDBC. Preferir `PreparedStatement`.
-
-### model/
-Entidades do domínio: Usuario, Cliente, Produto, Ingrediente, Mesa, Comanda, Pedido, ItemPedido, Caixa, Pagamento, Fornecedor e MovimentacaoEstoque.
-
-### config/ e util/
-Configurações de infraestrutura, conexão com banco, validações, formatação e helpers reutilizáveis.
-
-## Módulos
-
-- Operação: Pedidos, Mesas, Comandas, Cozinha, Delivery/Retirada.
-- Cadastros: Clientes, Produtos, Ingredientes, Combos, Fornecedores.
-- Estoque: Movimentações, Compras, Perdas, Alertas.
-- Financeiro: Caixa, Pagamentos, Despesas, Fechamento diário.
-- Gestão: Dashboard, Relatórios, Usuários/Permissões, Auditoria.
+```java
+Connection con = iniciar();      // abre a conexão sem gravar ainda
+try {
+    // ... grava pedido, itens, baixa de estoque ...
+    con.commit();                // tudo certo: grava de verdade
+} catch (SQLException | RuntimeException e) {
+    desfazer(con);               // deu erro: volta tudo
+    throw e;
+} finally {
+    con.close();
+}
+```
 
 ## Banco de dados
 
-O banco é PostgreSQL e o schema reproduzível deve permanecer em `database/schema.sql`.
-
-## IDE
-
-O projeto pode ser desenvolvido no IntelliJ IDEA ou NetBeans. Os arquivos `.form` existentes foram criados no NetBeans; para edição visual dessas telas, o NetBeans é mais simples. Código Java, JDBC, regras e Git podem ser trabalhados normalmente no IntelliJ.
-
-## Regras
-
-- Não adicionar SQL novo diretamente nas telas.
-- Preferir `PreparedStatement`.
-- Não versionar credenciais.
-- Toda feature nasce de `develop`.
-- Toda feature entra por Pull Request para `develop`.
-- Não desenvolver diretamente em `main`.
-- Manter `database/schema.sql` sincronizado.
-- O projeto deve continuar compilando com `ant clean compile`.
+O script `database/schema.sql` cria todas as tabelas e pode ser executado mais de uma vez sem problemas.

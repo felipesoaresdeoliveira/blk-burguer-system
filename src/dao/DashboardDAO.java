@@ -54,18 +54,25 @@ public class DashboardDAO {
         return Timestamp.valueOf(dia.atStartOfDay());
     }
 
-    /** Faturamento e quantidade de vendas no período [de, ate]. */
+    /** Descontos dos pedidos pagos no período (#18): saem do faturamento. */
+    private static final String DESCONTOS = "(SELECT COALESCE(SUM(desconto), 0) FROM \"Pedido\" "
+            + "WHERE situacao = 'PAGO' AND data_pedido >= ? AND data_pedido < ?)";
+
+    /** Faturamento (itens - descontos) e quantidade de vendas no período [de, ate]. */
     public Resumo resumo(LocalDate de, LocalDate ate) throws SQLException {
-        String sql = "SELECT COALESCE(SUM(v.total), 0), COUNT(DISTINCT " + CHAVE_VENDA + "), COALESCE(SUM(v.quantidade), 0) "
+        String sql = "SELECT COALESCE(SUM(v.total), 0) - " + DESCONTOS + ", COUNT(DISTINCT " + CHAVE_VENDA + "), "
+                + "COALESCE(SUM(v.quantidade), 0) "
                 + VENDAS_PAGAS + "AND v.data_venda >= ? AND v.data_venda < ?";
         try (Connection con = ConexaoBD.getConnection();
                 PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setTimestamp(1, inicio(de));
             pst.setTimestamp(2, inicio(ate.plusDays(1)));
+            pst.setTimestamp(3, inicio(de));
+            pst.setTimestamp(4, inicio(ate.plusDays(1)));
             try (ResultSet rs = pst.executeQuery()) {
                 rs.next();
                 Resumo r = new Resumo();
-                r.faturamento = rs.getDouble(1);
+                r.faturamento = Math.round(rs.getDouble(1) * 100) / 100.0;
                 r.vendas = rs.getInt(2);
                 r.itens = rs.getInt(3);
                 return r;
@@ -75,7 +82,8 @@ public class DashboardDAO {
 
     /** Faturamento e nº de vendas de cada dia, do mais antigo ao mais recente (dias sem venda = 0). */
     public List<Linha> faturamentoPorDia(LocalDate de, LocalDate ate) throws SQLException {
-        String sql = "SELECT d::date AS dia, COALESCE(SUM(v.total), 0) AS total, "
+        String sql = "SELECT d::date AS dia, COALESCE(SUM(v.total), 0) - (SELECT COALESCE(SUM(desconto), 0) "
+                + "  FROM \"Pedido\" WHERE situacao = 'PAGO' AND data_pedido >= d AND data_pedido < d + interval '1 day') AS total, "
                 + "       COUNT(DISTINCT CASE WHEN v.id IS NOT NULL THEN COALESCE('p' || v.pedido_id, 'v' || v.id) END) AS vendas "
                 + "FROM generate_series(?::date, ?::date, interval '1 day') d "
                 + "LEFT JOIN (SELECT v.* " + VENDAS_PAGAS + ") v ON v.data_venda >= d AND v.data_venda < d + interval '1 day' "

@@ -41,6 +41,12 @@ public class VendaService {
      */
     public entidades.Pedido finalizarVenda(List<Venda> itens, FormaPagamento forma, double valorRecebido, int clienteId,
             boolean paraViagem, int mesaId, String nome) throws SQLException, EstoqueInsuficienteException {
-        return new PedidoService().vendaBalcao(itens, forma, valorRecebido, clienteId, paraViagem, mesaId, nome);
+        return finalizarVenda(itens, forma, valorRecebido, clienteId, paraViagem, mesaId, nome, 0);
+    }
+
+    /** Com desconto em reais sobre o total dos itens (#18). */
+    public entidades.Pedido finalizarVenda(List<Venda> itens, FormaPagamento forma, double valorRecebido, int clienteId,
+            boolean paraViagem, int mesaId, String nome, double desconto) throws SQLException, EstoqueInsuficienteException {
+        return new PedidoService().vendaBalcao(itens, forma, valorRecebido, clienteId, paraViagem, mesaId, nome, desconto);
     }
 }

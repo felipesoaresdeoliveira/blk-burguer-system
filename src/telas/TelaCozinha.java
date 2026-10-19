@@ -32,7 +32,7 @@ import ui.Tema;
  * (na fila, em preparo, pronto), atualização automática a cada poucos
  * segundos e alerta quando chega pedido novo.
  */
-public class TelaCozinha extends javax.swing.JFrame {
+public class TelaCozinha extends javax.swing.JPanel implements Navegavel {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(TelaCozinha.class.getName());
     /** Intervalo de atualização automática. */
@@ -61,17 +61,7 @@ public class TelaCozinha extends javax.swing.JFrame {
         timerRelogio.start();
         atualizarRelogio();
         carregar();
-        Tema.tamanhoPadrao(this);
 
-        // F11 alterna tela cheia; Esc sai da tela cheia.
-        javax.swing.JRootPane raiz = getRootPane();
-        raiz.registerKeyboardAction(e -> alternarTelaCheia(),
-                javax.swing.KeyStroke.getKeyStroke("F11"), javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
-        raiz.registerKeyboardAction(e -> {
-            if (isUndecorated()) {
-                alternarTelaCheia();
-            }
-        }, javax.swing.KeyStroke.getKeyStroke("ESCAPE"), javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
         // Redesenha os cartões quando a largura da coluna muda.
         addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
@@ -81,16 +71,24 @@ public class TelaCozinha extends javax.swing.JFrame {
         });
     }
 
-    /** Abre o painel em tela cheia (modo TV). */
-    public static TelaCozinha abrirTelaCheia() {
-        TelaCozinha t = new TelaCozinha();
-        t.alternarTelaCheia();
-        return t;
+    /** Abre o painel numa janela própria em tela cheia (modo TV). */
+    public static CozinhaTV abrirTelaCheia() {
+        return CozinhaTV.abrir();
+    }
+
+    /** Dentro da janela da TV: esconde "Tela cheia" e mantém "Sair". Na janela única: o inverso. */
+    void modoTV(boolean tv) {
+        btnTelaCheia.setVisible(!tv);
+        btnSair.setVisible(tv);
+    }
+
+    @Override
+    public void aoSair() {
+        encerrar();
     }
 
     private void aplicarVisual() {
-        Tema.janela(this);
-        getContentPane().setBackground(Tema.FUNDO);
+        setBackground(Tema.FUNDO);
         for (JPanel p : new JPanel[]{painelTopo, painelMarca, painelContadores, painelAcoes, painelColunas,
             colFila, colPreparo, colPronto}) {
             p.setBackground(Tema.FUNDO);
@@ -104,7 +102,7 @@ public class TelaCozinha extends javax.swing.JFrame {
         Tema.titulo(lblTitulo);
         Tema.secundario(lblSubtitulo);
         lblRelogio.setForeground(Tema.TEXTO);
-        estilizarColuna(lblColFila, scrollFila, listaFila, new Color(0x3987E5));
+        estilizarColuna(lblColFila, scrollFila, listaFila, Tema.SERIES.get(0));
         estilizarColuna(lblColPreparo, scrollPreparo, listaPreparo, Tema.DESTAQUE);
         estilizarColuna(lblColPronto, scrollPronto, listaPronto, Tema.SUCESSO);
         for (JButton b : new JButton[]{btnTelaCheia, btnSair}) {
@@ -206,7 +204,7 @@ public class TelaCozinha extends javax.swing.JFrame {
                 "Marcar como pronto", "Nada em preparo");
         int nPronto = preencher(listaPronto, scrollPronto, porEtapa.get(StatusCozinha.PRONTO), StatusCozinha.PRONTO,
                 "Entregue / retirado", "Nenhum pedido aguardando");
-        contador(lblContFila, nFila, "na fila", new Color(0x3987E5));
+        contador(lblContFila, nFila, "na fila", Tema.SERIES.get(0));
         contador(lblContPreparo, nPreparo, "em preparo", Tema.DESTAQUE);
         contador(lblContPronto, nPronto, nPronto == 1 ? "pronto" : "prontos", Tema.SUCESSO);
     }
@@ -284,21 +282,6 @@ public class TelaCozinha extends javax.swing.JFrame {
         }.execute();
     }
 
-    /** Alterna entre janela e tela cheia sem bordas (modo TV). */
-    private void alternarTelaCheia() {
-        boolean cheia = !isUndecorated();
-        dispose();
-        setUndecorated(cheia);
-        if (cheia) {
-            setExtendedState(MAXIMIZED_BOTH);
-        } else {
-            setExtendedState(NORMAL);
-            Tema.tamanhoPadrao(this);
-        }
-        btnTelaCheia.setText(cheia ? "Sair da tela cheia (Esc)" : "Tela cheia (F11)");
-        setVisible(true);
-    }
-
     private void encerrar() {
         timerAtualizar.stop();
         timerRelogio.stop();
@@ -334,9 +317,7 @@ public class TelaCozinha extends javax.swing.JFrame {
         scrollPronto = new javax.swing.JScrollPane();
         listaPronto = new javax.swing.JPanel();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Cozinha");
-        setMinimumSize(new java.awt.Dimension(1100, 650));
+        setLayout(new java.awt.BorderLayout());
 
         painelTopo.setBorder(javax.swing.BorderFactory.createEmptyBorder(16, 24, 14, 24));
         painelTopo.setLayout(new java.awt.BorderLayout(24, 0));
@@ -370,7 +351,7 @@ public class TelaCozinha extends javax.swing.JFrame {
         lblRelogio.setText("00:00");
         painelAcoes.add(lblRelogio);
 
-        btnTelaCheia.setText("Tela cheia (F11)");
+        btnTelaCheia.setText("Abrir na TV (tela cheia)");
         btnTelaCheia.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnTelaCheiaActionPerformed(evt);
@@ -388,7 +369,7 @@ public class TelaCozinha extends javax.swing.JFrame {
 
         painelTopo.add(painelAcoes, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelTopo, java.awt.BorderLayout.PAGE_START);
+        add(painelTopo, java.awt.BorderLayout.PAGE_START);
 
         painelColunas.setBorder(javax.swing.BorderFactory.createEmptyBorder(6, 24, 24, 24));
         painelColunas.setLayout(new java.awt.GridLayout(1, 3, 18, 0));
@@ -422,13 +403,12 @@ public class TelaCozinha extends javax.swing.JFrame {
 
         painelColunas.add(colPronto);
 
-        getContentPane().add(painelColunas, java.awt.BorderLayout.CENTER);
+        add(painelColunas, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnTelaCheiaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTelaCheiaActionPerformed
-        alternarTelaCheia();
+        CozinhaTV.abrir();
     }//GEN-LAST:event_btnTelaCheiaActionPerformed
 
     private void btnSairActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSairActionPerformed
@@ -438,7 +418,7 @@ public class TelaCozinha extends javax.swing.JFrame {
 
     public static void main(String args[]) {
         Tema.aplicar();
-        java.awt.EventQueue.invokeLater(() -> new TelaCozinha().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> Main.testar(new TelaCozinha()));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

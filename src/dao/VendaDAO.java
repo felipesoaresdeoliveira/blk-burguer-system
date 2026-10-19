@@ -78,23 +78,6 @@ public class VendaDAO {
         baixarEstoque(con, ingrediente, -quantidade);
     }
 
-    /** Cria o cabeçalho da venda e retorna seu id. */
-    public int criarPedido(Connection con, double total, FormaPagamento forma,
-            double valorRecebido, double troco) throws SQLException {
-        String sql = "INSERT INTO \"Pedido\" (total, forma_pagamento, valor_recebido, troco) "
-                + "VALUES (?, ?, ?, ?) RETURNING id";
-        try (PreparedStatement pst = con.prepareStatement(sql)) {
-            pst.setDouble(1, total);
-            pst.setString(2, forma.name());
-            pst.setDouble(3, valorRecebido);
-            pst.setDouble(4, troco);
-            try (ResultSet rs = pst.executeQuery()) {
-                rs.next();
-                return rs.getInt(1);
-            }
-        }
-    }
-
     /**
      * Vendas do período [de, ate], mais recentes primeiro. Limites nulos não
      * filtram. Itens antigos sem pedido aparecem como vendas avulsas.

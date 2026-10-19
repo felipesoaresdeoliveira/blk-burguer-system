@@ -14,6 +14,10 @@ public enum Modulo {
     ESTOQUE("Estoque"),
     RELATORIOS("Relatórios"),
     USUARIOS("Usuários"),
+    /** Despesas operacionais (#40). */
+    DESPESAS("Despesas"),
+    /** Consulta da trilha de auditoria (#37): só o administrador. */
+    AUDITORIA("Auditoria"),
     /** Cadastros gerais da operação: mesas, taxa de entrega. */
     CADASTROS("Cadastros gerais"),
     /** Ações sensíveis: cancelar pedido, excluir cadastros. */

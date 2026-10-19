@@ -197,6 +197,58 @@ CREATE TABLE IF NOT EXISTS "Configuracao" (
 );
 INSERT INTO "Configuracao" (chave, valor) VALUES ('taxa_entrega', '7.00') ON CONFLICT (chave) DO NOTHING;
 
+-- ===================================================================
+-- Gestão: desconto, perdas, auditoria, despesas (#18 #34 #37 #40)
+-- ===================================================================
+
+-- Desconto do pedido (#18): total = itens + taxa de entrega - desconto
+ALTER TABLE "Pedido" ADD COLUMN IF NOT EXISTS desconto DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (desconto >= 0);
+
+-- Perdas de estoque (#34): tipo PERDA no histórico, com categoria e usuário
+ALTER TABLE "MovimentacaoEstoque" ADD COLUMN IF NOT EXISTS categoria VARCHAR(20);
+ALTER TABLE "MovimentacaoEstoque" ADD COLUMN IF NOT EXISTS usuario_id INTEGER REFERENCES "Login"("Id");
+-- Custo unitário no momento da movimentação (valoriza a perda mesmo se o custo mudar depois)
+ALTER TABLE "MovimentacaoEstoque" ADD COLUMN IF NOT EXISTS custo_unitario DOUBLE PRECISION;
+
+-- Trilha de auditoria (#37): só inserção; o banco recusa alterar ou apagar
+CREATE TABLE IF NOT EXISTS "Auditoria" (
+    id SERIAL PRIMARY KEY,
+    data TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    usuario_id INTEGER REFERENCES "Login"("Id"),
+    usuario_nome VARCHAR(100),
+    acao VARCHAR(40) NOT NULL,
+    referencia VARCHAR(100),
+    detalhe VARCHAR(500)
+);
+CREATE INDEX IF NOT EXISTS auditoria_data ON "Auditoria" (data DESC);
+
+CREATE OR REPLACE FUNCTION auditoria_somente_leitura() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'O histórico de auditoria não pode ser alterado nem apagado.';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS auditoria_bloqueio ON "Auditoria";
+CREATE TRIGGER auditoria_bloqueio BEFORE UPDATE OR DELETE ON "Auditoria"
+    FOR EACH ROW EXECUTE FUNCTION auditoria_somente_leitura();
+-- TRUNCATE não dispara gatilhos de linha: bloqueado à parte.
+DROP TRIGGER IF EXISTS auditoria_bloqueio_truncate ON "Auditoria";
+CREATE TRIGGER auditoria_bloqueio_truncate BEFORE TRUNCATE ON "Auditoria"
+    FOR EACH STATEMENT EXECUTE FUNCTION auditoria_somente_leitura();
+
+-- Despesas operacionais (#40)
+CREATE TABLE IF NOT EXISTS "Despesa" (
+    id SERIAL PRIMARY KEY,
+    descricao VARCHAR(150) NOT NULL,
+    categoria VARCHAR(20) NOT NULL
+        CHECK (categoria IN ('ALUGUEL', 'ENERGIA', 'INTERNET', 'FORNECEDOR', 'MANUTENCAO', 'OUTROS')),
+    data DATE NOT NULL DEFAULT CURRENT_DATE,
+    valor DOUBLE PRECISION NOT NULL CHECK (valor > 0),
+    usuario_id INTEGER REFERENCES "Login"("Id"),
+    criado_em TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS despesa_data ON "Despesa" (data);
+
 -- Crie o primeiro usuário manualmente antes de abrir o sistema.
 -- Exemplo apenas para ambiente local de desenvolvimento:
 -- INSERT INTO "Login" (usuario, senha) VALUES ('admin', 'troque-esta-senha');
