@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -34,53 +33,88 @@ import ui.Tema;
  */
 public class Main extends javax.swing.JFrame {
 
-    /** Item do menu lateral. */
+    /** Um item do menu lateral. */
     private static final class Item {
         final String grupo;
         final String rotulo;
         final String icone;
         final Modulo modulo;
-        final Class<? extends JPanel> tela;
-        final Supplier<JPanel> criar;
 
-        Item(String grupo, String rotulo, String icone, Modulo modulo, Class<? extends JPanel> tela, Supplier<JPanel> criar) {
+        Item(String grupo, String rotulo, String icone, Modulo modulo) {
             this.grupo = grupo;
             this.rotulo = rotulo;
             this.icone = icone;
             this.modulo = modulo;
-            this.tela = tela;
-            this.criar = criar;
         }
     }
 
+    /** Itens do menu, na ordem em que aparecem. */
     private static final List<Item> ITENS = new ArrayList<>();
     static {
-        ITENS.add(new Item("", "Visão geral", "layout-dashboard", Modulo.DASHBOARD, TelaVisaoGeral.class, TelaVisaoGeral::new));
-        ITENS.add(new Item("Operação", "Caixa", "wallet", Modulo.CAIXA, TelaCaixa.class, TelaCaixa::new));
-        ITENS.add(new Item("Operação", "Mesas", "armchair", Modulo.MESAS, TelaMesas.class, TelaMesas::new));
-        ITENS.add(new Item("Operação", "Pedidos", "clipboard-list", Modulo.PEDIDOS, TelaPedidos.class, TelaPedidos::new));
-        ITENS.add(new Item("Operação", "Cozinha", "chef-hat", Modulo.COZINHA, TelaCozinha.class, TelaCozinha::new));
-        ITENS.add(new Item("Cadastros", "Clientes", "users", Modulo.CLIENTES, TelaClientes.class, TelaClientes::new));
-        ITENS.add(new Item("Cadastros", "Produtos", "sandwich", Modulo.PRODUTOS, TelaProdutos.class, TelaProdutos::new));
-        ITENS.add(new Item("Cadastros", "Estoque", "package", Modulo.ESTOQUE, TelaEstoque.class, TelaEstoque::new));
-        ITENS.add(new Item("Gestão", "Histórico de vendas", "history", Modulo.HISTORICO, TelaHistoricoVendas.class, TelaHistoricoVendas::new));
-        ITENS.add(new Item("Gestão", "Relatórios", "chart-column", Modulo.RELATORIOS, TelaRelatorio.class, TelaRelatorio::new));
-        ITENS.add(new Item("Gestão", "Fechamento do dia", "calendar-check", Modulo.RELATORIOS, TelaFechamento.class, TelaFechamento::new));
-        ITENS.add(new Item("Gestão", "Despesas", "banknote", Modulo.DESPESAS, TelaDespesas.class, TelaDespesas::new));
-        ITENS.add(new Item("Gestão", "Usuários", "shield-user", Modulo.USUARIOS, TelaUsuarios.class, TelaUsuarios::new));
-        ITENS.add(new Item("Gestão", "Auditoria", "scroll-text", Modulo.AUDITORIA, TelaAuditoria.class, TelaAuditoria::new));
+        ITENS.add(new Item("", "Visão geral", "layout-dashboard", Modulo.DASHBOARD));
+        ITENS.add(new Item("Operação", "Caixa", "wallet", Modulo.CAIXA));
+        ITENS.add(new Item("Operação", "Mesas", "armchair", Modulo.MESAS));
+        ITENS.add(new Item("Operação", "Pedidos", "clipboard-list", Modulo.PEDIDOS));
+        ITENS.add(new Item("Operação", "Cozinha", "chef-hat", Modulo.COZINHA));
+        ITENS.add(new Item("Cadastros", "Clientes", "users", Modulo.CLIENTES));
+        ITENS.add(new Item("Cadastros", "Produtos", "sandwich", Modulo.PRODUTOS));
+        ITENS.add(new Item("Cadastros", "Estoque", "package", Modulo.ESTOQUE));
+        ITENS.add(new Item("Gestão", "Histórico de vendas", "history", Modulo.HISTORICO));
+        ITENS.add(new Item("Gestão", "Relatórios", "chart-column", Modulo.RELATORIOS));
+        ITENS.add(new Item("Gestão", "Fechamento do dia", "calendar-check", Modulo.RELATORIOS));
+        ITENS.add(new Item("Gestão", "Despesas", "banknote", Modulo.DESPESAS));
+        ITENS.add(new Item("Gestão", "Usuários", "shield-user", Modulo.USUARIOS));
+        ITENS.add(new Item("Gestão", "Auditoria", "scroll-text", Modulo.AUDITORIA));
     }
 
-    /** Telas sem item próprio no menu: qual item fica marcado e o caminho exibido. */
-    private static final Map<Class<?>, Object[]> SUBTELAS = new LinkedHashMap<>();
-    static {
-        SUBTELAS.put(Vendas.class, new Object[]{TelaCaixa.class, "Nova venda"});
-        SUBTELAS.put(TelaComanda.class, new Object[]{TelaMesas.class, "Comanda"});
+    /** Cria a tela de um item do menu. */
+    private static JPanel criarTela(String rotulo) {
+        switch (rotulo) {
+            case "Caixa": return new TelaCaixa();
+            case "Mesas": return new TelaMesas();
+            case "Pedidos": return new TelaPedidos();
+            case "Cozinha": return new TelaCozinha();
+            case "Clientes": return new TelaClientes();
+            case "Produtos": return new TelaProdutos();
+            case "Estoque": return new TelaEstoque();
+            case "Histórico de vendas": return new TelaHistoricoVendas();
+            case "Relatórios": return new TelaRelatorio();
+            case "Fechamento do dia": return new TelaFechamento();
+            case "Despesas": return new TelaDespesas();
+            case "Usuários": return new TelaUsuarios();
+            case "Auditoria": return new TelaAuditoria();
+            default: return new TelaVisaoGeral();
+        }
+    }
+
+    /** Qual item do menu fica marcado quando esta tela está aberta. */
+    private static String itemDaTela(JPanel tela) {
+        if (tela instanceof Vendas || tela instanceof TelaCaixa) return "Caixa";
+        if (tela instanceof TelaComanda || tela instanceof TelaMesas) return "Mesas";
+        if (tela instanceof TelaPedidos) return "Pedidos";
+        if (tela instanceof TelaCozinha) return "Cozinha";
+        if (tela instanceof TelaClientes) return "Clientes";
+        if (tela instanceof TelaProdutos) return "Produtos";
+        if (tela instanceof TelaEstoque) return "Estoque";
+        if (tela instanceof TelaHistoricoVendas) return "Histórico de vendas";
+        if (tela instanceof TelaRelatorio) return "Relatórios";
+        if (tela instanceof TelaFechamento) return "Fechamento do dia";
+        if (tela instanceof TelaDespesas) return "Despesas";
+        if (tela instanceof TelaUsuarios) return "Usuários";
+        if (tela instanceof TelaAuditoria) return "Auditoria";
+        return "Visão geral";
+    }
+
+    /** Telas que ficam "dentro" de um item do menu mostram um complemento no caminho. */
+    private static String complementoDaTela(JPanel tela) {
+        if (tela instanceof Vendas) return "Nova venda";
+        if (tela instanceof TelaComanda) return "Comanda";
+        return null;
     }
 
     private static Main atual;
 
-    private final Map<Class<?>, JButton> botoesMenu = new LinkedHashMap<>();
+    private final Map<String, JButton> botoesMenu = new LinkedHashMap<>();
     private JPanel telaAtual;
     private final Timer relogio;
 
@@ -108,19 +142,18 @@ public class Main extends javax.swing.JFrame {
 
     /** Primeira tela do perfil: visão geral, caixa ou o primeiro módulo permitido. */
     private static JPanel telaInicial() {
-        for (Modulo preferido : new Modulo[]{Modulo.DASHBOARD, Modulo.CAIXA}) {
-            for (Item i : ITENS) {
-                if (i.modulo == preferido && Sessao.pode(i.modulo)) {
-                    return i.criar.get();
-                }
-            }
+        if (Sessao.pode(Modulo.DASHBOARD)) {
+            return criarTela("Visão geral");
+        }
+        if (Sessao.pode(Modulo.CAIXA)) {
+            return criarTela("Caixa");
         }
         for (Item i : ITENS) {
             if (Sessao.pode(i.modulo)) {
-                return i.criar.get();
+                return criarTela(i.rotulo);
             }
         }
-        return new TelaVisaoGeral();
+        return criarTela("Visão geral");
     }
 
     /** Mostra a tela na janela única (cria a janela se ainda não existe). */
@@ -246,26 +279,23 @@ public class Main extends javax.swing.JFrame {
             b.setIcon(Icones.comCor(i.icone, 18, () -> Tema.TEXTO_SECUNDARIO));
             b.setAlignmentX(Component.LEFT_ALIGNMENT);
             b.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, 40));
-            b.addActionListener(e -> mostrar(i.criar.get()));
-            botoesMenu.put(i.tela, b);
+            b.addActionListener(e -> mostrar(criarTela(i.rotulo)));
+            botoesMenu.put(i.rotulo, b);
             painelNav.add(b);
             painelNav.add(Box.createVerticalStrut(2));
         }
         painelNav.revalidate();
     }
 
-    private void marcarMenu(Class<?> tela) {
-        Class<?> alvo = SUBTELAS.containsKey(tela) ? (Class<?>) SUBTELAS.get(tela)[0] : tela;
-        for (Map.Entry<Class<?>, JButton> e : botoesMenu.entrySet()) {
-            JButton b = e.getValue();
-            boolean ativo = e.getKey().equals(alvo);
-            Item item = null;
-            for (Item i : ITENS) {
-                if (i.tela.equals(e.getKey())) {
-                    item = i;
-                }
+    /** Destaca no menu o item da tela aberta. */
+    private void marcarMenu(JPanel tela) {
+        String marcado = itemDaTela(tela);
+        for (Item item : ITENS) {
+            JButton b = botoesMenu.get(item.rotulo);
+            if (b == null) {
+                continue;
             }
-            if (ativo) {
+            if (item.rotulo.equals(marcado)) {
                 b.putClientProperty("JButton.buttonType", null);
                 b.putClientProperty("FlatLaf.style", "margin: 8,12,8,12; font: bold; borderWidth: 0; focusWidth: 0;"
                         + " background: " + hex(Tema.SELECIONADO) + "; foreground: " + hex(Tema.DESTAQUE));
@@ -278,17 +308,13 @@ public class Main extends javax.swing.JFrame {
     }
 
     /** Caminho mostrado na barra superior: "Operação › Caixa › Nova venda". */
-    private String caminho(Class<?> tela) {
-        String sub = null;
-        Class<?> alvo = tela;
-        if (SUBTELAS.containsKey(tela)) {
-            alvo = (Class<?>) SUBTELAS.get(tela)[0];
-            sub = (String) SUBTELAS.get(tela)[1];
-        }
+    private String caminho(JPanel tela) {
+        String marcado = itemDaTela(tela);
         for (Item i : ITENS) {
-            if (i.tela.equals(alvo)) {
+            if (i.rotulo.equals(marcado)) {
                 String base = (i.grupo.isEmpty() ? "" : i.grupo + "   ›   ") + i.rotulo;
-                return sub == null ? base : base + "   ›   " + sub;
+                String complemento = complementoDaTela(tela);
+                return complemento == null ? base : base + "   ›   " + complemento;
             }
         }
         return "BLK Burguer";
@@ -307,9 +333,9 @@ public class Main extends javax.swing.JFrame {
         Acabamento.aplicar(tela, true);
         Object padrao = tela.getClientProperty("BLK.botaoPadrao");
         getRootPane().setDefaultButton(padrao instanceof JButton ? (JButton) padrao : null);
-        lblCaminho.setText(caminho(tela.getClass()));
-        marcarMenu(tela.getClass());
-        setTitle("BLK Burguer - " + caminho(tela.getClass()).replace("   ›   ", " / "));
+        lblCaminho.setText(caminho(tela));
+        marcarMenu(tela);
+        setTitle("BLK Burguer - " + caminho(tela).replace("   ›   ", " / "));
         painelConteudo.revalidate();
         painelConteudo.repaint();
         tela.requestFocusInWindow();
@@ -332,18 +358,12 @@ public class Main extends javax.swing.JFrame {
 
     /** Troca o tema e recria a janela na mesma tela (as cores são lidas na criação). */
     private void trocarTema() {
-        Class<?> naTela = telaAtual == null ? null : telaAtual.getClass();
+        String itemAberto = telaAtual == null ? null : itemDaTela(telaAtual);
         Tema.alternar();
         java.awt.Rectangle limites = getBounds();
         int estado = getExtendedState();
         fechar();
-        Supplier<JPanel> recriar = null;
-        for (Item i : ITENS) {
-            if (i.tela.equals(naTela)) {
-                recriar = i.criar;
-            }
-        }
-        navegar(recriar != null ? recriar.get() : telaInicial());
+        navegar(itemAberto == null ? telaInicial() : criarTela(itemAberto));
         atual.setBounds(limites);
         atual.setExtendedState(estado);
         ui.Aviso.info(atual.painelConteudo, Tema.isEscuro() ? "Tema escuro ativado" : "Tema claro ativado");
