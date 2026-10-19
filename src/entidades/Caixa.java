@@ -88,6 +88,18 @@ public class Caixa {
         return Math.round(v * 100) / 100.0;
     }
 
+    /** Soma de (contado - esperado) nas formas; só faz sentido com o caixa fechado. */
+    public double getDiferencaTotal() {
+        double d = 0;
+        for (FormaPagamento f : FormaPagamento.values()) {
+            Double contado = informado.get(f);
+            if (contado != null) {
+                d += contado - getEsperado(f);
+            }
+        }
+        return Math.round(d * 100) / 100.0;
+    }
+
     public double getTotalVendido() {
         double t = 0;
         for (double v : recebido.values()) {

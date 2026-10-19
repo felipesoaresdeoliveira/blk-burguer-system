@@ -19,13 +19,14 @@ import service.EstoqueInsuficienteException;
 import service.PedidoService;
 import service.Sessao;
 import ui.Tema;
+import ui.Acabamento;
 
 /**
  * Comanda de um pedido (#24): mesa, retirada ou delivery. Itens são montados
  * numa lista e enviados juntos para a cozinha; o rodapé mostra total, pago e
  * saldo, e as ações de conta, transferência, entrega e recebimento.
  */
-public class TelaComanda extends javax.swing.JFrame {
+public class TelaComanda extends javax.swing.JPanel implements Navegavel {
 
     /** De onde a comanda foi aberta, para o "Voltar". */
     public enum Origem { MESAS, PEDIDOS, CAIXA }
@@ -40,20 +41,27 @@ public class TelaComanda extends javax.swing.JFrame {
     private Pedido pedido;
     private final Timer timer;
 
+    @Override
+    public void aoSair() {
+        if (timer != null) {
+            timer.stop();
+        }
+    }
+
     public TelaComanda(int pedidoId, Origem origem) {
         this.pedidoId = pedidoId;
         this.origem = origem;
         initComponents();
+        Acabamento.vazio(tabelaItens, "Nenhum item lançado ainda");
+        Acabamento.vazio(tabelaRascunho, "Escolha um produto e clique em Adicionar");
         aplicarVisual();
         carregarCardapio();
         carregar();
         timer = new Timer(5000, e -> carregar());
         timer.start();
-        Tema.tamanhoPadrao(this);
     }
 
     private void aplicarVisual() {
-        Tema.janela(this);
         Tema.titulo(lblTitulo);
         Tema.secundario(lblSubtitulo, lblRascunho);
         Tema.cartao(painelLateral);
@@ -100,7 +108,7 @@ public class TelaComanda extends javax.swing.JFrame {
         boolean aberto = pedido.getSituacao() == SituacaoPedido.ABERTO;
         lblTitulo.setText(pedido.getDescricao());
         long min = Duration.between(pedido.getData(), LocalDateTime.now()).toMinutes();
-        StringBuilder sub = new StringBuilder("Pedido " + pedido.getId() + " | " + pedido.getTipo() + " | aberto há " + min + " min");
+        StringBuilder sub = new StringBuilder("Pedido " + pedido.getId() + " | " + pedido.getTipo() + " | aberto há " + Tema.duracao(min));
         if (pedido.getTipo() == TipoPedido.DELIVERY && pedido.getEnderecoEntrega() != null) {
             sub.append(" | ").append(pedido.getEnderecoEntrega());
         }
@@ -134,7 +142,7 @@ public class TelaComanda extends javax.swing.JFrame {
         String taxa = pedido.getTaxaEntrega() > 0 ? "  (inclui entrega " + Tema.reais(pedido.getTaxaEntrega()) + ")" : "";
         lblTotais.setText("<html>Total <span style='font-size:20pt'>" + Tema.reais(pedido.getTotal()) + "</span>" + taxa
                 + "&nbsp;&nbsp; Pago " + Tema.reais(pedido.getPago())
-                + "&nbsp;&nbsp; <span style='color:#F5A524'>Falta " + Tema.reais(pedido.getSaldo()) + "</span></html>");
+                + "&nbsp;&nbsp; <span style='color:" + Tema.hexHtml(Tema.DESTAQUE) + "'>Falta " + Tema.reais(pedido.getSaldo()) + "</span></html>");
 
         boolean mesa = pedido.getTipo() == TipoPedido.MESA;
         boolean delivery = pedido.getTipo() == TipoPedido.DELIVERY;
@@ -263,19 +271,15 @@ public class TelaComanda extends javax.swing.JFrame {
     }
 
     private void voltar() {
-        if (timer != null) {
-            timer.stop();
-        }
-        dispose();
         switch (origem) {
             case MESAS:
-                new TelaMesas().setVisible(true);
+                Main.navegar(new TelaMesas());
                 break;
             case CAIXA:
-                new TelaCaixa().setVisible(true);
+                Main.navegar(new TelaCaixa());
                 break;
             default:
-                new TelaPedidos().setVisible(true);
+                Main.navegar(new TelaPedidos());
         }
     }
 
@@ -318,11 +322,10 @@ public class TelaComanda extends javax.swing.JFrame {
         btnSaiu = new javax.swing.JButton();
         btnEntregue = new javax.swing.JButton();
         btnCancelarPedido = new javax.swing.JButton();
+        btnImprimir = new javax.swing.JButton();
         btnReceber = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Comanda");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -347,7 +350,7 @@ public class TelaComanda extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -474,6 +477,14 @@ public class TelaComanda extends javax.swing.JFrame {
         });
         painelBotoes.add(btnCancelarPedido);
 
+        btnImprimir.setText("Imprimir");
+        btnImprimir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnImprimirActionPerformed(evt);
+            }
+        });
+        painelBotoes.add(btnImprimir);
+
         btnReceber.setText("Receber");
         btnReceber.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -486,10 +497,13 @@ public class TelaComanda extends javax.swing.JFrame {
 
         painelCorpo.add(painelRodape, java.awt.BorderLayout.PAGE_END);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btnImprimirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImprimirActionPerformed
+        impressao.Impressao.menu(btnImprimir, pedidoId);
+    }//GEN-LAST:event_btnImprimirActionPerformed
 
     private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed
         if (!rascunho.isEmpty() && JOptionPane.showConfirmDialog(this,
@@ -559,6 +573,7 @@ public class TelaComanda extends javax.swing.JFrame {
     private javax.swing.JButton btnConta;
     private javax.swing.JButton btnEntregue;
     private javax.swing.JButton btnEnviar;
+    private javax.swing.JButton btnImprimir;
     private javax.swing.JButton btnReceber;
     private javax.swing.JButton btnRemoverItem;
     private javax.swing.JButton btnSaiu;

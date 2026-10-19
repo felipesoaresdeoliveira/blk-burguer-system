@@ -101,7 +101,7 @@ public class CartaoCozinha extends JPanel {
 
         JPanel tempo = transparente(null);
         tempo.setLayout(new BoxLayout(tempo, BoxLayout.Y_AXIS));
-        JLabel lblMin = rotulo(minutos + " min", Font.BOLD, 24f, corTempo);
+        JLabel lblMin = rotulo(Tema.duracao(minutos), Font.BOLD, 24f, corTempo);
         lblMin.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 8));
         lblMin.setAlignmentX(Component.RIGHT_ALIGNMENT);
         tempo.add(lblMin);

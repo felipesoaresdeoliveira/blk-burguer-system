@@ -14,9 +14,10 @@ import java.util.Map;
 import javax.swing.JOptionPane;
 import ui.CartaoIndicador;
 import ui.Tema;
+import ui.Acabamento;
 
 /** Relatórios por período (#25): indicadores, comparação com o período anterior e gráficos. */
-public class TelaRelatorio extends javax.swing.JFrame {
+public class TelaRelatorio extends javax.swing.JPanel implements Navegavel {
 
     private static final Locale BR = new Locale("pt", "BR");
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT);
@@ -26,6 +27,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
 
     public TelaRelatorio() {
         initComponents();
+        Acabamento.vazio(tabelaProdutos, "Sem vendas no período");
         aplicarVisual();
         cmbPeriodo.setSelectedItem("Últimos 7 dias");
         preencherDatas();
@@ -42,13 +44,11 @@ public class TelaRelatorio extends javax.swing.JFrame {
         };
         txtDe.getDocument().addDocumentListener(paraPersonalizado);
         txtAte.getDocument().addDocumentListener(paraPersonalizado);
-        getRootPane().setDefaultButton(btnAplicar);
+        putClientProperty("BLK.botaoPadrao", btnAplicar);
         carregar();
-        Tema.tamanhoPadrao(this);
     }
 
     private void aplicarVisual() {
-        Tema.janela(this);
         Tema.titulo(txtTitle);
         Tema.secundario(lblSubtitulo);
         Tema.primario(btnAplicar);
@@ -125,7 +125,9 @@ public class TelaRelatorio extends javax.swing.JFrame {
                     dashboardDAO.faturamentoPorDia(de, ate),
                     dashboardDAO.porFormaPagamento(de, ate),
                     dashboardDAO.maisVendidos(de, ate, 500),
-                    dashboardDAO.estoqueBaixo()
+                    dashboardDAO.estoqueBaixo(),
+                    new service.DespesaService().total(de, ate),
+                    new service.EstoqueService().totalPerdas(de, ate)
                 };
             }
 
@@ -137,6 +139,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
                     Object[] r = get();
                     String rotuloPeriodo = de.equals(ate) ? de.format(DATA) : de.format(DATA) + " a " + ate.format(DATA);
                     mostrarIndicadores((DashboardDAO.Resumo) r[0], (DashboardDAO.Resumo) r[1], (List<Estoque>) r[5]);
+                    mostrarResultado(((DashboardDAO.Resumo) r[0]).faturamento, (Double) r[6], (Double) r[7]);
                     mostrarFaturamento((List<DashboardDAO.Linha>) r[2], rotuloPeriodo, dias);
                     mostrarPagamentos((Map<FormaPagamento, DashboardDAO.Linha>) r[3], rotuloPeriodo);
                     mostrarProdutos((List<DashboardDAO.Linha>) r[4], ((DashboardDAO.Resumo) r[0]).faturamento);
@@ -145,6 +148,14 @@ public class TelaRelatorio extends javax.swing.JFrame {
                 }
             }
         }.execute();
+    }
+
+    /** Faturamento menos despesas (#40) e perdas de estoque (#34) do período. */
+    private void mostrarResultado(double faturamento, double despesas, double perdas) {
+        double resultado = Math.round((faturamento - despesas - perdas) * 100) / 100.0;
+        cardResultado.setValor(Tema.reais(resultado));
+        cardResultado.setTendencia(resultado >= 0 ? CartaoIndicador.Tendencia.NEUTRA : CartaoIndicador.Tendencia.AVISO);
+        cardResultado.setDetalhe("Despesas " + Tema.reais(despesas) + " | perdas " + Tema.reais(perdas));
     }
 
     /** Variação em relação ao período anterior, com seta e cor (não só cor). */
@@ -156,7 +167,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
         }
         double variacao = (atual - anterior) / anterior * 100;
         card.setTendencia(variacao >= 0 ? CartaoIndicador.Tendencia.ALTA : CartaoIndicador.Tendencia.BAIXA);
-        card.setDetalhe(String.format(BR, "%+.0f%% vs período anterior (" + formato + ")", variacao, anterior));
+        card.setDetalhe(String.format(BR, "%+.0f%% vs anterior (" + formato + ")", variacao, anterior));
     }
 
     private void mostrarIndicadores(DashboardDAO.Resumo atual, DashboardDAO.Resumo anterior, List<Estoque> baixo) {
@@ -166,8 +177,6 @@ public class TelaRelatorio extends javax.swing.JFrame {
         comparar(cardVendas, atual.vendas, anterior.vendas, "%.0f");
         cardTicket.setValor(Tema.reais(atual.ticketMedio()));
         comparar(cardTicket, atual.ticketMedio(), anterior.ticketMedio(), "R$ %,.2f");
-        cardItens.setValor(String.valueOf(atual.itens));
-        comparar(cardItens, atual.itens, anterior.itens, "%.0f");
         cardEstoque.setValor(String.valueOf(baixo.size()));
         cardEstoque.setTendencia(baixo.isEmpty() ? CartaoIndicador.Tendencia.NEUTRA : CartaoIndicador.Tendencia.AVISO);
         cardEstoque.setDetalhe(baixo.isEmpty() ? "Todos acima do mínimo" : (baixo.size() == 1 ? "item para repor" : "itens para repor"));
@@ -267,7 +276,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
         cardFaturamento = new ui.CartaoIndicador();
         cardVendas = new ui.CartaoIndicador();
         cardTicket = new ui.CartaoIndicador();
-        cardItens = new ui.CartaoIndicador();
+        cardResultado = new ui.CartaoIndicador();
         cardEstoque = new ui.CartaoIndicador();
         painelGraficos = new javax.swing.JPanel();
         graficoFaturamento = new ui.GraficoColunas();
@@ -278,9 +287,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         tabelaProdutos = new javax.swing.JTable();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Relatórios");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -305,7 +312,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -350,8 +357,8 @@ public class TelaRelatorio extends javax.swing.JFrame {
         cardTicket.setTitulo("Ticket médio");
         painelIndicadores.add(cardTicket);
 
-        cardItens.setTitulo("Itens vendidos");
-        painelIndicadores.add(cardItens);
+        cardResultado.setTitulo("Resultado");
+        painelIndicadores.add(cardResultado);
 
         cardEstoque.setTitulo("Estoque baixo agora");
         painelIndicadores.add(cardEstoque);
@@ -385,9 +392,8 @@ public class TelaRelatorio extends javax.swing.JFrame {
 
         painelCorpo.add(painelConteudoRel, java.awt.BorderLayout.CENTER);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnAplicarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAplicarActionPerformed
@@ -403,7 +409,7 @@ public class TelaRelatorio extends javax.swing.JFrame {
     private javax.swing.JButton btnVoltar;
     private ui.CartaoIndicador cardEstoque;
     private ui.CartaoIndicador cardFaturamento;
-    private ui.CartaoIndicador cardItens;
+    private ui.CartaoIndicador cardResultado;
     private ui.CartaoIndicador cardTicket;
     private ui.CartaoIndicador cardVendas;
     private javax.swing.JComboBox<String> cmbPeriodo;

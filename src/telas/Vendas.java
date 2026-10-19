@@ -4,8 +4,10 @@ import entidades.Adicional;
 import entidades.Produto;
 import entidades.Venda;
 import java.util.Map;
+import ui.Tema;
+import ui.Acabamento;
 
-public class Vendas extends javax.swing.JFrame {
+public class Vendas extends javax.swing.JPanel implements Navegavel {
 
     private java.util.List<Venda> itensVenda = new java.util.ArrayList<>();
     private java.util.List<Produto> produtos = new java.util.ArrayList<>();
@@ -121,12 +123,24 @@ public class Vendas extends javax.swing.JFrame {
         return c instanceof entidades.Cliente ? ((entidades.Cliente) c).getId() : 0;
     }
 
-    private Object[] escolherPagamento(double total) {
+    /**
+     * Janela de pagamento: desconto (#18) em reais ou porcentagem, forma de
+     * pagamento e, em dinheiro, valor recebido com o troco calculado na hora
+     * sobre o total já com desconto. Retorna {forma, valorRecebido, clienteId,
+     * desconto em reais} ou null se o usuário cancelar.
+     */
+    private Object[] escolherPagamento(double subtotal) {
         javax.swing.JComboBox<entidades.FormaPagamento> campoForma
                 = new javax.swing.JComboBox<>(entidades.FormaPagamento.values());
         javax.swing.JTextField campoRecebido = new javax.swing.JTextField(10);
+        javax.swing.JTextField campoDesconto = new javax.swing.JTextField(8);
+        campoDesconto.putClientProperty("JTextField.placeholderText", "0");
+        javax.swing.JComboBox<String> tipoDesconto = new javax.swing.JComboBox<>(new String[]{"R$", "%"});
         javax.swing.JLabel lblTroco = new javax.swing.JLabel();
         lblTroco.setFont(lblTroco.getFont().deriveFont(java.awt.Font.BOLD, 14f));
+        javax.swing.JLabel lblTotal = new javax.swing.JLabel();
+        lblTotal.setFont(lblTotal.getFont().deriveFont(java.awt.Font.BOLD, 16f));
+        javax.swing.JLabel lblDescontoInfo = new javax.swing.JLabel(" ");
         javax.swing.JComboBox<Object> campoCliente = new javax.swing.JComboBox<>();
         campoCliente.addItem("Sem cliente");
         try {
@@ -137,26 +151,39 @@ public class Vendas extends javax.swing.JFrame {
             // Sem clientes carregados: a venda segue sem cliente.
         }
 
+        // [0] = desconto válido em reais, ou -1 se o valor digitado for inválido
+        double[] desconto = {0};
         Runnable atualizar = () -> {
+            Double d = campoDesconto.getText().trim().isEmpty() ? Double.valueOf(0) : lerValor(campoDesconto.getText());
+            try {
+                desconto[0] = service.PedidoService.calcularDesconto(subtotal, d == null ? -1 : d, tipoDesconto.getSelectedIndex() == 1);
+                lblDescontoInfo.setText(desconto[0] > 0 ? "Subtotal " + Tema.reais(subtotal) + "  -  desconto " + Tema.reais(desconto[0]) : " ");
+                lblDescontoInfo.setForeground(Tema.TEXTO_SECUNDARIO);
+            } catch (IllegalArgumentException ex) {
+                desconto[0] = -1;
+                lblDescontoInfo.setText(d == null ? "Desconto inválido" : ex.getMessage());
+                lblDescontoInfo.setForeground(Tema.PERIGO);
+            }
+            double total = service.VendaService.arredondar(subtotal - Math.max(0, desconto[0]));
+            lblTotal.setText("Total: " + Tema.reais(total));
             boolean dinheiro = campoForma.getSelectedItem() == entidades.FormaPagamento.DINHEIRO;
             campoRecebido.setEnabled(dinheiro);
             if (!dinheiro) {
                 lblTroco.setText("Troco: R$ 0,00");
-                lblTroco.setForeground(ui.Tema.SUCESSO);
+                lblTroco.setForeground(Tema.SUCESSO);
                 return;
             }
             Double recebido = lerValor(campoRecebido.getText());
             double troco = recebido == null ? -total : service.VendaService.troco(total, recebido);
             if (troco < 0) {
-                lblTroco.setText(String.format("Faltam: R$ %.2f", -troco));
-                lblTroco.setForeground(ui.Tema.PERIGO);
+                lblTroco.setText("Faltam: " + Tema.reais(-troco));
+                lblTroco.setForeground(Tema.PERIGO);
             } else {
-                lblTroco.setText(String.format("Troco: R$ %.2f", troco));
-                lblTroco.setForeground(ui.Tema.SUCESSO);
+                lblTroco.setText("Troco: " + Tema.reais(troco));
+                lblTroco.setForeground(Tema.SUCESSO);
             }
         };
-        campoForma.addActionListener(e -> atualizar.run());
-        campoRecebido.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        javax.swing.event.DocumentListener aoDigitar = new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
                 atualizar.run();
             }
@@ -168,17 +195,25 @@ public class Vendas extends javax.swing.JFrame {
             public void changedUpdate(javax.swing.event.DocumentEvent e) {
                 atualizar.run();
             }
-        });
+        };
+        campoForma.addActionListener(e -> atualizar.run());
+        tipoDesconto.addActionListener(e -> atualizar.run());
+        campoRecebido.getDocument().addDocumentListener(aoDigitar);
+        campoDesconto.getDocument().addDocumentListener(aoDigitar);
         atualizar.run();
 
-        javax.swing.JLabel lblTotal = new javax.swing.JLabel(String.format("Total: R$ %.2f", total));
-        lblTotal.setFont(lblTotal.getFont().deriveFont(java.awt.Font.BOLD, 16f));
         javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.GridLayout(0, 1, 0, 6));
         painel.add(lblTotal);
         javax.swing.JLabel lblOnde = new javax.swing.JLabel("Entregar em: " + descricaoDestino());
         lblOnde.setFont(lblOnde.getFont().deriveFont(java.awt.Font.BOLD, 14f));
-        lblOnde.setForeground(ui.Tema.DESTAQUE);
+        lblOnde.setForeground(Tema.DESTAQUE);
         painel.add(lblOnde);
+        javax.swing.JPanel linhaDesconto = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 6, 0));
+        linhaDesconto.add(new javax.swing.JLabel("Desconto:"));
+        linhaDesconto.add(campoDesconto);
+        linhaDesconto.add(tipoDesconto);
+        painel.add(linhaDesconto);
+        painel.add(lblDescontoInfo);
         painel.add(new javax.swing.JLabel("Forma de pagamento:"));
         painel.add(campoForma);
         painel.add(new javax.swing.JLabel("Valor recebido (dinheiro):"));
@@ -193,13 +228,19 @@ public class Vendas extends javax.swing.JFrame {
             if (opcao != javax.swing.JOptionPane.OK_OPTION) {
                 return null;
             }
+            if (desconto[0] < 0) {
+                javax.swing.JOptionPane.showMessageDialog(this, lblDescontoInfo.getText(),
+                        "Desconto", javax.swing.JOptionPane.WARNING_MESSAGE);
+                continue;
+            }
+            double total = service.VendaService.arredondar(subtotal - desconto[0]);
             entidades.FormaPagamento forma = (entidades.FormaPagamento) campoForma.getSelectedItem();
             if (forma != entidades.FormaPagamento.DINHEIRO) {
-                return new Object[]{forma, total, clienteSelecionado(campoCliente)};
+                return new Object[]{forma, total, clienteSelecionado(campoCliente), desconto[0]};
             }
             Double recebido = lerValor(campoRecebido.getText());
             if (recebido != null && service.VendaService.troco(total, recebido) >= 0) {
-                return new Object[]{forma, recebido, clienteSelecionado(campoCliente)};
+                return new Object[]{forma, recebido, clienteSelecionado(campoCliente), desconto[0]};
             }
             javax.swing.JOptionPane.showMessageDialog(this,
                     "Informe um valor recebido igual ou maior que o total.",
@@ -209,27 +250,26 @@ public class Vendas extends javax.swing.JFrame {
 
     public Vendas() {
         initComponents();
-        ui.Tema.janela(this);
-        ui.Tema.titulo(BLKBurguer1);
-        ui.Tema.secundario(lblSubtitulo);
-        ui.Tema.primario(BtnFinalizarVenda);
-        ui.Tema.perigo(cancelarVenda);
-        ui.Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelAdicionar,
+        Acabamento.vazio(TableItensVenda1, "Escolha o destino, adicione os itens e finalize");
+        Tema.titulo(BLKBurguer1);
+        Tema.secundario(lblSubtitulo);
+        Tema.primario(BtnFinalizarVenda);
+        Tema.perigo(cancelarVenda);
+        Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo, painelAdicionar,
                 painelLinhaItem, painelRodape, painelTotal, painelBotoesVenda, painelDestino, painelLinhaDestino,
                 painelItemBloco);
-        TxtADDItem1.setForeground(ui.Tema.TEXTO);
-        lblDestinoTitulo.setForeground(ui.Tema.DESTAQUE);
+        TxtADDItem1.setForeground(Tema.TEXTO);
+        lblDestinoTitulo.setForeground(Tema.DESTAQUE);
         txtNomeCliente.putClientProperty("JTextField.placeholderText", "para chamar o cliente");
         cmbDestino.addActionListener(e -> atualizarDestino());
         carregarMesas();
         atualizarDestino();
-        NumeroTotal1.setForeground(ui.Tema.DESTAQUE);
+        NumeroTotal1.setForeground(Tema.DESTAQUE);
         BtnFinalizarVenda.setFont(BtnFinalizarVenda.getFont().deriveFont(java.awt.Font.BOLD, 16f));
         BtnFinalizarVenda.setPreferredSize(new java.awt.Dimension(200, 46));
         SelectQnt1.setModel(new javax.swing.SpinnerNumberModel(1, 1, 999, 1));
         carregarEstoque();
         atualizarTabela();
-        ui.Tema.tamanhoPadrao(this);
     }
 
     @SuppressWarnings("unchecked")
@@ -271,9 +311,7 @@ public class Vendas extends javax.swing.JFrame {
         cancelarVenda = new javax.swing.JButton();
         BtnFinalizarVenda = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Nova venda");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -298,7 +336,7 @@ public class Vendas extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -405,9 +443,8 @@ public class Vendas extends javax.swing.JFrame {
 
         painelCorpo.add(painelRodape, java.awt.BorderLayout.PAGE_END);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
 
@@ -427,12 +464,14 @@ public class Vendas extends javax.swing.JFrame {
         }
         entidades.FormaPagamento forma = (entidades.FormaPagamento) pagamento[0];
         double recebido = (Double) pagamento[1];
+        double desconto = (Double) pagamento[3];
+        double aPagar = service.VendaService.arredondar(total - desconto);
 
         try {
             boolean viagem = cmbDestino.getSelectedIndex() == 3;
             int mesaId = destinoMesa() ? ((entidades.Mesa) cmbMesa.getSelectedItem()).getId() : 0;
             entidades.Pedido pedido = new service.VendaService().finalizarVenda(itensVenda, forma, recebido,
-                    (Integer) pagamento[2], viagem, mesaId, txtNomeCliente.getText().trim());
+                    (Integer) pagamento[2], viagem, mesaId, txtNomeCliente.getText().trim(), desconto);
             String onde = destinoMesa() ? "Entregar na " + cmbMesa.getSelectedItem()
                     : viagem ? "Para viagem: chamar pela senha" : "Consumo no local: chamar pela senha";
             String msg = String.format("Venda nº %d finalizada!%n%s%nSenha do cliente: %d%nPagamento: %s",
@@ -440,10 +479,20 @@ public class Vendas extends javax.swing.JFrame {
             if (pedido.getItens().stream().anyMatch(v -> v.getStatusCozinha() != null)) {
                 msg += String.format("%nOs lanches foram enviados para a cozinha.");
             }
-            if (forma == entidades.FormaPagamento.DINHEIRO) {
-                msg += String.format("%nTroco: R$ %.2f", service.VendaService.troco(total, recebido));
+            if (desconto > 0) {
+                msg += String.format("%nDesconto: R$ %.2f (total R$ %.2f)", desconto, aPagar);
             }
-            javax.swing.JOptionPane.showMessageDialog(this, msg);
+            if (forma == entidades.FormaPagamento.DINHEIRO) {
+                msg += String.format("%nTroco: R$ %.2f", service.VendaService.troco(aPagar, recebido));
+            }
+            Object[] opcoes = {"Imprimir recibo", "Pedido da cozinha", "OK"};
+            int escolha = javax.swing.JOptionPane.showOptionDialog(this, msg, "Venda finalizada",
+                    javax.swing.JOptionPane.DEFAULT_OPTION, javax.swing.JOptionPane.INFORMATION_MESSAGE, null, opcoes, opcoes[2]);
+            if (escolha == 0) {
+                impressao.Impressao.recibo(this, pedido.getId());
+            } else if (escolha == 1) {
+                impressao.Impressao.cozinha(this, pedido.getId());
+            }
         } catch (service.EstoqueInsuficienteException e) {
             javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
                     "Estoque insuficiente", javax.swing.JOptionPane.WARNING_MESSAGE);
@@ -493,8 +542,7 @@ public class Vendas extends javax.swing.JFrame {
     }//GEN-LAST:event_BtnAdd1ActionPerformed
 
     private void voltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_voltarActionPerformed
-        dispose();
-        new TelaCaixa().setVisible(true);
+        Main.navegar(new TelaCaixa());
 
     }//GEN-LAST:event_voltarActionPerformed
 
@@ -558,7 +606,7 @@ public class Vendas extends javax.swing.JFrame {
 
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new Vendas().setVisible(true);
+                Main.testar(new Vendas());
             }
         });
     }

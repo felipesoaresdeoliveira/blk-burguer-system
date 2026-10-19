@@ -1,6 +1,7 @@
 package service;
 
 import dao.UsuarioDAO;
+import entidades.AcaoAuditoria;
 import entidades.Modulo;
 import entidades.Perfil;
 import entidades.Usuario;
@@ -42,6 +43,7 @@ public class UsuarioService {
         validar(u);
         Senhas.validarNova(senha);
         usuarioDAO.inserir(u, Senhas.gerarHash(senha));
+        Auditoria.registrar(AcaoAuditoria.USUARIO_CRIADO, u.getUsuario(), "Perfil " + u.getPerfil());
     }
 
     public void atualizar(Usuario u) throws SQLException {
@@ -56,6 +58,8 @@ public class UsuarioService {
             throw new IllegalArgumentException("Você não pode desativar a sua própria conta.");
         }
         usuarioDAO.atualizar(u);
+        Auditoria.registrar(AcaoAuditoria.USUARIO_ALTERADO, u.getUsuario(),
+                "Perfil " + u.getPerfil() + (u.isAtivo() ? ", ativa" : ", desativada"));
     }
 
     public void redefinirSenha(int usuarioId, String novaSenha) throws SQLException {
@@ -65,6 +69,7 @@ public class UsuarioService {
         }
         Senhas.validarNova(novaSenha);
         usuarioDAO.definirSenha(usuarioId, Senhas.gerarHash(novaSenha));
+        Auditoria.registrar(AcaoAuditoria.SENHA_REDEFINIDA, "Usuário " + usuarioId, null);
     }
 
     private boolean ehAdminAtivoHoje(int id) throws SQLException {

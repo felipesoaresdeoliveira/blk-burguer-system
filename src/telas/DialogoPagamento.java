@@ -36,6 +36,7 @@ public final class DialogoPagamento {
     private boolean houvePagamento;
 
     private final JLabel lblTotal = valor();
+    private final JLabel lblTituloTotal = new JLabel("Total");
     private final JLabel lblPago = valor();
     private final JLabel lblSaldo = valor();
     private final JTable tabela = new JTable();
@@ -76,9 +77,12 @@ public final class DialogoPagamento {
     }
 
     private static JPanel bloco(String titulo, JLabel valor) {
+        return bloco(new JLabel(titulo), valor);
+    }
+
+    private static JPanel bloco(JLabel t, JLabel valor) {
         JPanel p = new JPanel(new BorderLayout(0, 4));
         Tema.cartao(p);
-        JLabel t = new JLabel(titulo);
         t.setForeground(Tema.TEXTO_SECUNDARIO);
         p.add(t, BorderLayout.NORTH);
         p.add(valor, BorderLayout.CENTER);
@@ -90,7 +94,7 @@ public final class DialogoPagamento {
         raiz.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
 
         JPanel resumo = new JPanel(new GridLayout(1, 3, 12, 0));
-        resumo.add(bloco("Total", lblTotal));
+        resumo.add(bloco(lblTituloTotal, lblTotal));
         resumo.add(bloco("Já pago", lblPago));
         resumo.add(bloco("Falta pagar", lblSaldo));
         lblSaldo.setForeground(Tema.DESTAQUE);
@@ -123,6 +127,11 @@ public final class DialogoPagamento {
         JButton btnTudo = new JButton("Valor total restante");
         btnTudo.addActionListener(e -> txtValor.setText(formatar(pedido.getSaldo())));
         dividir.add(btnTudo);
+        JButton btnDesconto = new JButton("Desconto...");
+        btnDesconto.setIcon(ui.Icones.get("percent", 16));
+        btnDesconto.setToolTipText("Dar desconto em reais ou porcentagem sobre o subtotal");
+        btnDesconto.addActionListener(e -> desconto());
+        dividir.add(btnDesconto);
 
         JPanel sul = new JPanel(new BorderLayout(0, 10));
         sul.add(dividir, BorderLayout.NORTH);
@@ -174,6 +183,8 @@ public final class DialogoPagamento {
             }
             dialogo.setTitle("Receber pagamento - pedido " + pedido.getId() + " | " + pedido.getDescricao());
             lblTotal.setText(Tema.reais(pedido.getTotal()));
+            lblTituloTotal.setText(pedido.getDesconto() > 0
+                    ? "Total (desconto de " + Tema.reais(pedido.getDesconto()) + ")" : "Total");
             lblPago.setText(Tema.reais(pedido.getPago()));
             lblSaldo.setText(Tema.reais(pedido.getSaldo()));
             javax.swing.table.DefaultTableModel modelo = new javax.swing.table.DefaultTableModel(
@@ -226,6 +237,55 @@ public final class DialogoPagamento {
         lblTroco.setForeground(troco < 0 ? Tema.PERIGO : Tema.SUCESSO);
     }
 
+    /**
+     * Desconto em reais ou porcentagem sobre o subtotal (#18). Mostra o novo
+     * total antes de confirmar; 0 remove o desconto.
+     */
+    private void desconto() {
+        double subtotal = pedido.getSubtotal();
+        JTextField txt = new JTextField(pedido.getDesconto() > 0 ? formatar(pedido.getDesconto()) : "", 8);
+        JComboBox<String> tipo = new JComboBox<>(new String[]{"R$", "%"});
+        JLabel previa = new JLabel(" ");
+        Runnable atualizar = () -> {
+            Double v = ler(txt.getText());
+            try {
+                double d = service.PedidoService.calcularDesconto(subtotal, v == null ? 0 : v, tipo.getSelectedIndex() == 1);
+                previa.setText("Subtotal " + Tema.reais(subtotal) + "  -  desconto " + Tema.reais(d)
+                        + "  =  total " + Tema.reais(subtotal - d));
+                previa.setForeground(Tema.TEXTO);
+            } catch (IllegalArgumentException ex) {
+                previa.setText(ex.getMessage());
+                previa.setForeground(Tema.PERIGO);
+            }
+        };
+        txt.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { atualizar.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { atualizar.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { atualizar.run(); }
+        });
+        tipo.addActionListener(e -> atualizar.run());
+        atualizar.run();
+        JPanel linha = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 6, 0));
+        linha.add(new JLabel("Desconto:"));
+        linha.add(txt);
+        linha.add(tipo);
+        JPanel p = new JPanel(new GridLayout(0, 1, 0, 8));
+        p.add(linha);
+        p.add(previa);
+        if (JOptionPane.showConfirmDialog(dialogo, p, "Desconto - pedido " + pedidoId, JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) {
+            return;
+        }
+        Double valor = ler(txt.getText());
+        try {
+            pedidoService.aplicarDesconto(pedidoId, valor == null ? 0 : valor, tipo.getSelectedIndex() == 1);
+            houvePagamento = true;
+            carregar();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(dialogo, e.getMessage(), "Desconto", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
     private void registrar() {
         FormaPagamento forma = (FormaPagamento) cmbForma.getSelectedItem();
         Double valor = ler(txtValor.getText());
@@ -246,9 +306,13 @@ public final class DialogoPagamento {
                 JOptionPane.showMessageDialog(dialogo, "Troco: " + Tema.reais(troco), "Troco", JOptionPane.INFORMATION_MESSAGE);
             }
             if (atualizado.getSaldo() <= 0) {
-                JOptionPane.showMessageDialog(dialogo, "Pedido " + pedidoId + " pago por completo!", "Pagamento",
-                        JOptionPane.INFORMATION_MESSAGE);
+                Object[] opcoes = {"Imprimir recibo", "Concluir"};
+                int escolha = JOptionPane.showOptionDialog(dialogo, "Pedido " + pedidoId + " pago por completo!", "Pagamento",
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opcoes, opcoes[1]);
                 dialogo.dispose();
+                if (escolha == 0) {
+                    impressao.Impressao.recibo(dialogo.getOwner(), pedidoId);
+                }
                 return;
             }
             carregar();

@@ -114,7 +114,7 @@ public class CartaoMesa extends JComponent {
             g.drawString(total, w - 16 - tw, 26 + fm.getAscent() - 8);
             if (mesa.getAbertaEm() != null) {
                 long min = Duration.between(mesa.getAbertaEm(), LocalDateTime.now()).toMinutes();
-                String tempo = min < 60 ? min + " min" : (min / 60) + "h" + String.format("%02d", min % 60);
+                String tempo = Tema.duracao(min);
                 g.setFont(PainelCartao.fonte(Font.PLAIN, 12f));
                 g.setColor(Tema.TEXTO_SECUNDARIO);
                 g.drawString(tempo, w - 16 - g.getFontMetrics().stringWidth(tempo), 26 + fm.getAscent() + 10);

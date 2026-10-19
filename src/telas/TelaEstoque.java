@@ -5,21 +5,28 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
 import ui.Tema;
+import ui.Aviso;
+import ui.Acabamento;
+import ui.Icones;
 
-public class TelaEstoque extends javax.swing.JFrame {
+public class TelaEstoque extends javax.swing.JPanel implements Navegavel {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(TelaEstoque.class.getName());
 
     public TelaEstoque() {
         initComponents();
+        txtBusca.putClientProperty("JTextField.leadingIcon", Icones.get("search", 16));
+        txtBusca.putClientProperty("JTextField.showClearButton", Boolean.TRUE);
+        btnLimparFiltro.setText("");
+        btnLimparFiltro.setIcon(Icones.get("x", 16));
+        btnLimparFiltro.setToolTipText("Limpar filtros");
+        Acabamento.vazio(tabelaItens, "Nenhum item encontrado");
         aplicarVisual();
         validaCampos("inicio");
         montaTabela();
-        Tema.tamanhoPadrao(this);
     }
 
     private void aplicarVisual() {
-        Tema.janela(this);
         Tema.titulo(txtTitle);
         Tema.secundario(lblSubtitulo);
         Tema.primario(btnSalvar);
@@ -66,6 +73,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         boolean selecionado = op.equals("selecionado");
         btnEntrada.setEnabled(selecionado);
         btnAjustar.setEnabled(selecionado);
+        btnPerda.setEnabled(selecionado);
         if (op.equals("inicio")) {
             CampoNome.setEnabled(false);
             CampoCusto.setEnabled(false);
@@ -127,22 +135,12 @@ public class TelaEstoque extends javax.swing.JFrame {
             for (Estoque e : listaEstoque) {
                 modelo.addRow(new Object[]{
                     e.getNome(), e.getTipo(), e.getQuantidade(), e.getMinimo(),
-                    e.getQuantidade() <= 0 ? "⚠ Sem estoque" : e.isEstoqueBaixo() ? "⚠ Baixo" : "OK",
+                    e.getQuantidade() <= 0 ? "Sem estoque" : e.isEstoqueBaixo() ? "Baixo" : "OK",
                     String.format("R$ %.2f", e.getPreco())
                 });
             }
             tabelaItens.setModel(modelo);
-            tabelaItens.getColumnModel().getColumn(4).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(javax.swing.JTable t, Object valor,
-                        boolean selecionado, boolean foco, int linha, int coluna) {
-                    super.getTableCellRendererComponent(t, valor, selecionado, foco, linha, coluna);
-                    String s = String.valueOf(valor);
-                    setForeground(s.contains("Sem") ? Tema.PERIGO : s.contains("Baixo") ? Tema.AVISO : Tema.TEXTO_FRACO);
-                    setFont(getFont().deriveFont(s.equals("OK") ? java.awt.Font.PLAIN : java.awt.Font.BOLD));
-                    return this;
-                }
-            });
+            tabelaItens.getColumnModel().getColumn(0).setPreferredWidth(200);
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(null, e.getMessage());
         }
@@ -189,11 +187,11 @@ public class TelaEstoque extends javax.swing.JFrame {
         btnCancelar = new javax.swing.JButton();
         btnEntrada = new javax.swing.JButton();
         btnAjustar = new javax.swing.JButton();
+        btnPerda = new javax.swing.JButton();
+        btnHistorico = new javax.swing.JButton();
         btnExcluir = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Estoque");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -218,7 +216,7 @@ public class TelaEstoque extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -227,7 +225,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         lblBusca.setText("Buscar:");
         painelBusca.add(lblBusca);
 
-        txtBusca.setPreferredSize(new java.awt.Dimension(260, 30));
+        txtBusca.setPreferredSize(new java.awt.Dimension(190, 30));
         painelBusca.add(txtBusca);
 
         lblFiltroTipo.setText("Tipo:");
@@ -259,7 +257,7 @@ public class TelaEstoque extends javax.swing.JFrame {
 
         painelCorpo.add(painelLista, java.awt.BorderLayout.CENTER);
 
-        painelFormulario.setPreferredSize(new java.awt.Dimension(360, 0));
+        painelFormulario.setPreferredSize(new java.awt.Dimension(330, 0));
         painelFormulario.setLayout(new java.awt.BorderLayout(0, 14));
         painelCampos.setLayout(new java.awt.GridLayout(0, 1, 0, 4));
         lblFormTitulo.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
@@ -350,6 +348,22 @@ public class TelaEstoque extends javax.swing.JFrame {
         });
         painelBotoes.add(btnAjustar);
 
+        btnPerda.setText("Perda");
+        btnPerda.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPerdaActionPerformed(evt);
+            }
+        });
+        painelBotoes.add(btnPerda);
+
+        btnHistorico.setText("Histórico");
+        btnHistorico.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnHistoricoActionPerformed(evt);
+            }
+        });
+        painelBotoes.add(btnHistorico);
+
         btnExcluir.setText("Excluir");
         btnExcluir.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -362,9 +376,8 @@ public class TelaEstoque extends javax.swing.JFrame {
 
         painelCorpo.add(painelFormulario, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
 
@@ -398,10 +411,12 @@ public class TelaEstoque extends javax.swing.JFrame {
         }
         try {
             estoqueDAO.excluir(est.getNome());
+            service.Auditoria.registrar(entidades.AcaoAuditoria.ESTOQUE_EXCLUIDO, est.getNome(),
+                    "Quantidade no momento: " + est.getQuantidade());
             limparCampos();
             montaTabela();
             validaCampos("inicio");
-            javax.swing.JOptionPane.showMessageDialog(null, "Excluído com sucesso!");
+            Aviso.sucesso(this, "Item excluído");
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
         }
@@ -440,7 +455,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             limparCampos();
             montaTabela();
             validaCampos("inicio");
-            javax.swing.JOptionPane.showMessageDialog(null, "Salvo com sucesso!");
+            Aviso.sucesso(this, "Item salvo");
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage());
         }
@@ -478,6 +493,75 @@ public class TelaEstoque extends javax.swing.JFrame {
     private void btnAjustarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAjustarActionPerformed
         movimentarEstoque(true);
     }//GEN-LAST:event_btnAjustarActionPerformed
+
+    private void btnPerdaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPerdaActionPerformed
+        registrarPerda();
+    }//GEN-LAST:event_btnPerdaActionPerformed
+
+    private void btnHistoricoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHistoricoActionPerformed
+        DialogoMovimentacoes.mostrar(this);
+    }//GEN-LAST:event_btnHistoricoActionPerformed
+
+    /**
+     * Perda de estoque (#34): quantidade, motivo e observação. A quantidade
+     * vai até o estoque atual, então o saldo nunca fica negativo.
+     */
+    private void registrarPerda() {
+        if (est.getNome() == null || est.getNome().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Selecione um item na tabela.");
+            return;
+        }
+        String nome = est.getNome();
+        int atual;
+        try {
+            atual = estoqueDAO.quantidadeAtual(nome);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
+            return;
+        }
+        if (atual <= 0) {
+            JOptionPane.showMessageDialog(this, nome + " está sem estoque: não há o que dar baixa.",
+                    "Perda de estoque", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        javax.swing.JSpinner campoQtd = new javax.swing.JSpinner(new javax.swing.SpinnerNumberModel(1, 1, atual, 1));
+        javax.swing.JComboBox<entidades.MotivoPerda> campoMotivo = new javax.swing.JComboBox<>(entidades.MotivoPerda.values());
+        javax.swing.JTextField campoObs = new javax.swing.JTextField(22);
+        campoObs.putClientProperty("JTextField.placeholderText", "ex.: lote vencido em 05/10");
+        javax.swing.JLabel resultado = new javax.swing.JLabel();
+        Runnable atualizar = () -> {
+            int qtd = (Integer) campoQtd.getValue();
+            resultado.setText(String.format("Ficará com %d  |  valor perdido %s", atual - qtd, Tema.reais(qtd * est.getPreco())));
+        };
+        campoQtd.addChangeListener(e -> atualizar.run());
+        atualizar.run();
+
+        javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.GridLayout(0, 1, 0, 6));
+        painel.add(new javax.swing.JLabel("Item: " + nome + "  (em estoque: " + atual + ")"));
+        painel.add(new javax.swing.JLabel("Quantidade perdida:"));
+        painel.add(campoQtd);
+        painel.add(new javax.swing.JLabel("Motivo:"));
+        painel.add(campoMotivo);
+        painel.add(new javax.swing.JLabel("Observação (opcional):"));
+        painel.add(campoObs);
+        painel.add(resultado);
+        if (JOptionPane.showConfirmDialog(this, painel, "Registrar perda de estoque",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) {
+            return;
+        }
+        try {
+            int nova = estoqueService.registrarPerda(nome, (Integer) campoQtd.getValue(),
+                    (entidades.MotivoPerda) campoMotivo.getSelectedItem(), campoObs.getText());
+            limparCampos();
+            montaTabela();
+            validaCampos("inicio");
+            Aviso.sucesso(this, "Perda registrada: " + nome + " ficou com " + nova);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Atenção", JOptionPane.WARNING_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
+        }
+    }
 
     /**
      * Abre a janela de entrada (ajuste = false) ou de ajuste (ajuste = true)
@@ -538,7 +622,7 @@ public class TelaEstoque extends javax.swing.JFrame {
             limparCampos();
             montaTabela();
             validaCampos("inicio");
-            JOptionPane.showMessageDialog(this, "Estoque de \"" + nome + "\" atualizado para " + nova + ".");
+            Aviso.sucesso(this, "Estoque de " + nome + " atualizado para " + nova);
         } catch (IllegalArgumentException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Atenção", JOptionPane.WARNING_MESSAGE);
         } catch (Exception e) {
@@ -568,7 +652,7 @@ public class TelaEstoque extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new TelaEstoque().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> Main.testar(new TelaEstoque()));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -583,8 +667,10 @@ public class TelaEstoque extends javax.swing.JFrame {
     private javax.swing.JButton btnEditar;
     private javax.swing.JButton btnEntrada;
     private javax.swing.JButton btnExcluir;
+    private javax.swing.JButton btnHistorico;
     private javax.swing.JButton btnLimparFiltro;
     private javax.swing.JButton btnNovo;
+    private javax.swing.JButton btnPerda;
     private javax.swing.JButton btnSair;
     private javax.swing.JButton btnSalvar;
     private javax.swing.JCheckBox chkSomenteBaixo;

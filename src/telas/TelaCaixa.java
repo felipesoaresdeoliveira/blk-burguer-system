@@ -9,37 +9,46 @@ import javax.swing.JOptionPane;
 import service.CaixaService;
 import ui.CartaoIndicador;
 import ui.Tema;
+import ui.Acabamento;
 
 /** Controle de caixa: abertura, sangria/suprimento, conferência e fechamento. */
-public class TelaCaixa extends javax.swing.JFrame {
+public class TelaCaixa extends javax.swing.JPanel implements Navegavel {
 
     private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DATA_HORA = DateTimeFormatter.ofPattern("dd/MM HH:mm");
 
     private final CaixaService caixaService = new CaixaService();
     private Caixa caixa;
+    private javax.swing.Timer timer;
+
+    @Override
+    public void aoSair() {
+        if (timer != null) {
+            timer.stop();
+        }
+    }
     private java.util.List<entidades.Pedido> aReceber = new java.util.ArrayList<>();
 
     public TelaCaixa() {
         initComponents();
-        Tema.janela(this);
+        Acabamento.vazio(tabelaReceber, "Nenhum pedido aguardando pagamento");
+        Acabamento.vazio(tabelaMov, "Nenhuma sangria ou suprimento neste caixa");
         Tema.titulo(lblTitulo);
-        Tema.primario(btnAbrir, btnFechar, btnNovaVenda);
-        btnNovaVenda.putClientProperty("FlatLaf.style", "background: #F5A524; foreground: #141414; font: bold +4;"
-                + " hoverBackground: #FFB63D; borderWidth: 0; focusWidth: 0; margin: 10,22,10,22;"
-                + " disabledBackground: #3A3016; disabledText: #8C7A4E");
+        Tema.primario(btnAbrir, btnNovaVenda);
+        btnNovaVenda.putClientProperty("FlatLaf.style", btnNovaVenda.getClientProperty("FlatLaf.style") + "; font: bold +2");
         // Quem não tem dashboard (perfil Caixa) começa aqui: o botão leva ao menu.
         if (!service.Sessao.pode(entidades.Modulo.DASHBOARD)) {
             btnVoltar.setText("Menu");
         }
-        new javax.swing.Timer(5000, e -> {
+        timer = new javax.swing.Timer(5000, e -> {
             if (isShowing()) {
                 carregar();
             }
-        }).start();
-        getRootPane().registerKeyboardAction(e -> novaVenda(),
+        });
+        timer.start();
+        registerKeyboardAction(e -> novaVenda(),
                 javax.swing.KeyStroke.getKeyStroke("F2"), javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
-        getContentPane().setBackground(Tema.FUNDO);
+        setBackground(Tema.FUNDO);
         for (javax.swing.JPanel p : new javax.swing.JPanel[]{painelCabecalho, painelTitulo, painelAcoes, painelCorpo,
             painelIndicadores, painelTabelas, painelMov, painelReceber}) {
             p.setBackground(Tema.FUNDO);
@@ -47,7 +56,6 @@ public class TelaCaixa extends javax.swing.JFrame {
         lblMov.setForeground(Tema.TEXTO);
         lblReceber.setForeground(Tema.TEXTO);
         carregar();
-        Tema.tamanhoPadrao(this);
     }
 
     private static Double lerValor(String texto) {
@@ -78,13 +86,13 @@ public class TelaCaixa extends javax.swing.JFrame {
         btnPedidos.setVisible(service.Sessao.pode(entidades.Modulo.PEDIDOS));
         btnFechar.setVisible(aberto);
         if (aberto) {
-            lblStatus.setText("● Aberto desde " + caixa.getAbertoEm().format(DATA_HORA)
-                    + (caixa.getAbertoPor() != null ? " por " + caixa.getAbertoPor() : "")
-                    + "  |  fundo de troco " + Tema.reais(caixa.getValorInicial()));
+            lblStatus.setText("● Aberto em " + caixa.getAbertoEm().format(DATA_HORA)
+                    + (caixa.getAbertoPor() != null ? " por " + caixa.getAbertoPor() : ""));
+            lblStatus.setToolTipText("Fundo de troco: " + Tema.reais(caixa.getValorInicial()));
             lblStatus.setForeground(Tema.SUCESSO);
             mostrarIndicadores(caixa);
         } else {
-            lblStatus.setText("○ Caixa fechado. Abra o caixa para registrar vendas.");
+            lblStatus.setText("○ Caixa fechado: abra para vender");
             lblStatus.setForeground(Tema.AVISO);
             for (CartaoIndicador c : new CartaoIndicador[]{cardDinheiro, cardPix, cardDebito, cardCredito, cardTotal}) {
                 c.setValor("-");
@@ -97,8 +105,7 @@ public class TelaCaixa extends javax.swing.JFrame {
 
     private void mostrarIndicadores(Caixa c) {
         cardDinheiro.setValor(Tema.reais(c.getEsperado(FormaPagamento.DINHEIRO)));
-        cardDinheiro.setDetalhe("Vendas " + Tema.reais(c.getRecebido().get(FormaPagamento.DINHEIRO))
-                + " + fundo " + Tema.reais(c.getValorInicial()));
+        cardDinheiro.setDetalhe("Inclui fundo de " + Tema.reais(c.getValorInicial()));
         cardPix.setValor(Tema.reais(c.getRecebido().get(FormaPagamento.PIX)));
         cardDebito.setValor(Tema.reais(c.getRecebido().get(FormaPagamento.DEBITO)));
         cardCredito.setValor(Tema.reais(c.getRecebido().get(FormaPagamento.CREDITO)));
@@ -214,9 +221,8 @@ public class TelaCaixa extends javax.swing.JFrame {
         menu.show(btnMais, 0, btnMais.getHeight());
     }
 
-    private void irPara(javax.swing.JFrame tela) {
-        dispose();
-        tela.setVisible(true);
+    private void irPara(javax.swing.JPanel tela) {
+        Main.navegar(tela);
     }
 
     /** O caixa anota o pedido, registra a venda e recebe o pagamento. */
@@ -225,8 +231,7 @@ public class TelaCaixa extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Abra o caixa para começar a vender.", "Caixa", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        dispose();
-        new Vendas().setVisible(true);
+        Main.navegar(new Vendas());
     }
 
     private void abrir() {
@@ -411,9 +416,7 @@ public class TelaCaixa extends javax.swing.JFrame {
         scrollMov = new javax.swing.JScrollPane();
         tabelaMov = new javax.swing.JTable();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Caixa");
-        setMinimumSize(new java.awt.Dimension(1100, 640));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -486,7 +489,7 @@ public class TelaCaixa extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoes, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(0, 18));
@@ -537,9 +540,8 @@ public class TelaCaixa extends javax.swing.JFrame {
 
         painelCorpo.add(painelTabelas, java.awt.BorderLayout.CENTER);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnNovaVendaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNovaVendaActionPerformed

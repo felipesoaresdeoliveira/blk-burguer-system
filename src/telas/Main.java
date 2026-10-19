@@ -1,327 +1,352 @@
 package telas;
 
-import dao.DashboardDAO;
-import entidades.Estoque;
-import entidades.FormaPagamento;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import entidades.Modulo;
 import entidades.Perfil;
 import entidades.Usuario;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Font;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import service.Sessao;
-import ui.CartaoIndicador;
+import ui.Acabamento;
+import ui.Icones;
 import ui.Tema;
 
-/** Tela inicial: dashboard com indicadores do dia, gráficos e navegação. */
+/**
+ * Janela única do sistema: menu lateral fixo (agrupado e com ícones, filtrado
+ * pelo perfil), barra superior com o caminho e o relógio, e a área onde cada
+ * módulo é exibido. As telas são painéis ({@link Navegavel}) trocados aqui.
+ */
 public class Main extends javax.swing.JFrame {
 
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Main.class.getName());
-    private static final Locale BR = new Locale("pt", "BR");
+    /** Item do menu lateral. */
+    private static final class Item {
+        final String grupo;
+        final String rotulo;
+        final String icone;
+        final Modulo modulo;
+        final Class<? extends JPanel> tela;
+        final Supplier<JPanel> criar;
 
-    private final DashboardDAO dashboardDAO = new DashboardDAO();
+        Item(String grupo, String rotulo, String icone, Modulo modulo, Class<? extends JPanel> tela, Supplier<JPanel> criar) {
+            this.grupo = grupo;
+            this.rotulo = rotulo;
+            this.icone = icone;
+            this.modulo = modulo;
+            this.tela = tela;
+            this.criar = criar;
+        }
+    }
+
+    private static final List<Item> ITENS = new ArrayList<>();
+    static {
+        ITENS.add(new Item("", "Visão geral", "layout-dashboard", Modulo.DASHBOARD, TelaVisaoGeral.class, TelaVisaoGeral::new));
+        ITENS.add(new Item("Operação", "Caixa", "wallet", Modulo.CAIXA, TelaCaixa.class, TelaCaixa::new));
+        ITENS.add(new Item("Operação", "Mesas", "armchair", Modulo.MESAS, TelaMesas.class, TelaMesas::new));
+        ITENS.add(new Item("Operação", "Pedidos", "clipboard-list", Modulo.PEDIDOS, TelaPedidos.class, TelaPedidos::new));
+        ITENS.add(new Item("Operação", "Cozinha", "chef-hat", Modulo.COZINHA, TelaCozinha.class, TelaCozinha::new));
+        ITENS.add(new Item("Cadastros", "Clientes", "users", Modulo.CLIENTES, TelaClientes.class, TelaClientes::new));
+        ITENS.add(new Item("Cadastros", "Produtos", "sandwich", Modulo.PRODUTOS, TelaProdutos.class, TelaProdutos::new));
+        ITENS.add(new Item("Cadastros", "Estoque", "package", Modulo.ESTOQUE, TelaEstoque.class, TelaEstoque::new));
+        ITENS.add(new Item("Gestão", "Histórico de vendas", "history", Modulo.HISTORICO, TelaHistoricoVendas.class, TelaHistoricoVendas::new));
+        ITENS.add(new Item("Gestão", "Relatórios", "chart-column", Modulo.RELATORIOS, TelaRelatorio.class, TelaRelatorio::new));
+        ITENS.add(new Item("Gestão", "Fechamento do dia", "calendar-check", Modulo.RELATORIOS, TelaFechamento.class, TelaFechamento::new));
+        ITENS.add(new Item("Gestão", "Despesas", "banknote", Modulo.DESPESAS, TelaDespesas.class, TelaDespesas::new));
+        ITENS.add(new Item("Gestão", "Usuários", "shield-user", Modulo.USUARIOS, TelaUsuarios.class, TelaUsuarios::new));
+        ITENS.add(new Item("Gestão", "Auditoria", "scroll-text", Modulo.AUDITORIA, TelaAuditoria.class, TelaAuditoria::new));
+    }
+
+    /** Telas sem item próprio no menu: qual item fica marcado e o caminho exibido. */
+    private static final Map<Class<?>, Object[]> SUBTELAS = new LinkedHashMap<>();
+    static {
+        SUBTELAS.put(Vendas.class, new Object[]{TelaCaixa.class, "Nova venda"});
+        SUBTELAS.put(TelaComanda.class, new Object[]{TelaMesas.class, "Comanda"});
+    }
+
+    private static Main atual;
+
+    private final Map<Class<?>, JButton> botoesMenu = new LinkedHashMap<>();
+    private JPanel telaAtual;
+    private final Timer relogio;
 
     public Main() {
         initComponents();
         aplicarVisual();
-        aplicarPermissoes();
+        montarMenu();
+        relogio = new Timer(1000, e -> atualizarRelogio());
+        relogio.start();
+        atualizarRelogio();
         Tema.tamanhoPadrao(this);
-        if (Sessao.pode(Modulo.DASHBOARD)) {
-            carregarDados();
-        }
     }
 
-    // ------------------------------------------------------------ navegação
+    // ------------------------------------------------------------ navegação (uso pelas telas)
 
-    /**
-     * Abre a tela inicial do usuário logado: a cozinha vai direto para o painel
-     * da TV e o caixa (sem dashboard) direto para a tela do Caixa, onde vende.
-     */
+    /** Abre a tela inicial do usuário logado: a cozinha vai direto para a TV. */
     public static void abrirInicio() {
         Usuario u = Sessao.usuario();
         if (u != null && u.getPerfil() == Perfil.COZINHA) {
-            TelaCozinha.abrirTelaCheia();
-        } else if (!Sessao.pode(Modulo.DASHBOARD) && Sessao.pode(Modulo.CAIXA)) {
-            new TelaCaixa().setVisible(true);
-        } else {
-            new Main().setVisible(true);
+            CozinhaTV.abrir();
+            return;
         }
+        navegar(telaInicial());
     }
 
-    /** Abre o menu principal (usado pelo "Menu" da tela do Caixa). */
-    public static void abrirMenu(javax.swing.JFrame tela) {
-        tela.dispose();
-        new Main().setVisible(true);
+    /** Primeira tela do perfil: visão geral, caixa ou o primeiro módulo permitido. */
+    private static JPanel telaInicial() {
+        for (Modulo preferido : new Modulo[]{Modulo.DASHBOARD, Modulo.CAIXA}) {
+            for (Item i : ITENS) {
+                if (i.modulo == preferido && Sessao.pode(i.modulo)) {
+                    return i.criar.get();
+                }
+            }
+        }
+        for (Item i : ITENS) {
+            if (Sessao.pode(i.modulo)) {
+                return i.criar.get();
+            }
+        }
+        return new TelaVisaoGeral();
     }
 
-    /** Volta de uma tela para o início do usuário. */
-    public static void voltar(javax.swing.JFrame tela) {
-        tela.dispose();
-        abrirInicio();
+    /** Mostra a tela na janela única (cria a janela se ainda não existe). */
+    public static void navegar(JPanel tela) {
+        if (atual == null) {
+            atual = new Main();
+            atual.setVisible(true);
+        }
+        atual.mostrar(tela);
     }
 
-    /** Encerra a sessão e volta para o login. */
-    public static void sair(javax.swing.JFrame tela) {
+    /** Volta para a tela inicial do perfil. */
+    public static void voltar(Component origem) {
+        navegar(telaInicial());
+    }
+
+    /** Compatibilidade: o antigo "Menu" agora é a tela inicial. */
+    public static void abrirMenu(Component origem) {
+        voltar(origem);
+    }
+
+    /** Encerra a sessão, fecha as janelas do sistema e volta para o login. */
+    public static void sair(Component origem) {
+        if (atual != null) {
+            atual.fechar();
+        }
+        java.awt.Window janela = origem == null ? null : SwingUtilities.getWindowAncestor(origem);
+        if (janela != null) {
+            janela.dispose();
+        }
         Sessao.encerrar();
-        tela.dispose();
         new Login().setVisible(true);
     }
 
-    /** Esconde do menu o que o perfil não acessa; sem dashboard, mostra atalhos. */
-    private void aplicarPermissoes() {
-        Object[][] itens = {
-            {btnVisaoGeral, Modulo.DASHBOARD}, {btnCaixa, Modulo.CAIXA}, {btnMesas, Modulo.MESAS},
-            {btnPedidos, Modulo.PEDIDOS}, {btnClientes, Modulo.CLIENTES},
-            {btnCozinha, Modulo.COZINHA}, {btnHistorico, Modulo.HISTORICO}, {btnProdutos, Modulo.PRODUTOS},
-            {btnEstoque, Modulo.ESTOQUE}, {btnRelatorio, Modulo.RELATORIOS}, {btnUsuarios, Modulo.USUARIOS}};
-        java.util.List<javax.swing.JButton> atalhos = new java.util.ArrayList<>();
-        for (Object[] item : itens) {
-            javax.swing.JButton b = (javax.swing.JButton) item[0];
-            boolean pode = Sessao.pode((Modulo) item[1]);
-            if (!pode) {
-                // Remover (e não só esconder): a grade não deixa buraco no menu.
-                painelBotoes.remove(b);
-            }
-            if (pode && b != btnVisaoGeral) {
-                atalhos.add(b);
-            }
-        }
-        Usuario u = Sessao.usuario();
-        lblUsuarioLogado.setText(u == null ? "Não identificado"
-                : "<html><b>" + u.getNome() + "</b><br>" + u.getPerfil() + "</html>");
-        if (!Sessao.pode(Modulo.DASHBOARD)) {
-            btnAtualizar.setVisible(false);
-            lblTitulo.setText("Olá, " + (u == null ? "" : u.getNome()) + "!");
-            lblData.setText("Escolha o que deseja fazer");
-            painelConteudo.remove(painelCorpo);
-            painelConteudo.add(montarAtalhos(atalhos), java.awt.BorderLayout.CENTER);
-        }
+    /** Abre uma tela sozinha numa janela (útil para testar uma tela isolada). */
+    public static void testar(JPanel tela) {
+        Tema.aplicar();
+        navegar(tela);
     }
 
-    /** Botões grandes para os módulos do perfil (usado por quem não vê o dashboard). */
-    private javax.swing.JPanel montarAtalhos(java.util.List<javax.swing.JButton> modulos) {
-        javax.swing.JPanel grade = new javax.swing.JPanel(new java.awt.GridLayout(0, 3, 16, 16));
-        grade.setBackground(Tema.FUNDO);
-        for (javax.swing.JButton origem : modulos) {
-            javax.swing.JButton b = new javax.swing.JButton(origem.getText());
-            b.setFont(b.getFont().deriveFont(java.awt.Font.BOLD, 20f));
-            b.setPreferredSize(new java.awt.Dimension(260, 120));
-            b.setFocusable(false);
-            if (origem == btnCaixa) {
-                Tema.primario(b);
-                b.putClientProperty("FlatLaf.style", "background: #F5A524; foreground: #141414; font: bold +8;"
-                        + " hoverBackground: #FFB63D; borderWidth: 0; arc: 16");
-            } else {
-                b.putClientProperty("FlatLaf.style", "background: #1C1C1B; hoverBackground: #262625; font: bold +8; arc: 16");
-            }
-            b.addActionListener(e -> origem.doClick());
-            grade.add(b);
-        }
-        javax.swing.JPanel topo = new javax.swing.JPanel(new java.awt.BorderLayout());
-        topo.setBackground(Tema.FUNDO);
-        topo.add(grade, java.awt.BorderLayout.NORTH);
-        return topo;
-    }
+    // ------------------------------------------------------------ janela
 
     private void aplicarVisual() {
         Tema.janela(this);
         getContentPane().setBackground(Tema.FUNDO);
         painelMenu.setBackground(Tema.MENU);
-        painelMenu.setBorder(javax.swing.BorderFactory.createCompoundBorder(
-                javax.swing.BorderFactory.createMatteBorder(0, 0, 0, 1, Tema.BORDA),
-                painelMenu.getBorder()));
-        for (javax.swing.JPanel p : new javax.swing.JPanel[]{painelNavegacao, painelMarca, painelBotoes, painelRodape}) {
-            p.setOpaque(false);
-        }
-        for (javax.swing.JPanel p : new javax.swing.JPanel[]{painelConteudo, painelCabecalho, painelTitulo, painelAcoes,
-            painelCorpo, painelIndicadores, painelGraficos}) {
-            p.setBackground(Tema.FUNDO);
-        }
-        Tema.titulo(lblLogo);
-        Tema.secundario(lblSlogan, lblData);
-        lblTitulo.setForeground(Tema.TEXTO);
+        painelMenu.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 0, 1, Tema.BORDA), painelMenu.getBorder()));
+        Tema.transparente(painelMarca, painelMarcaTexto, painelRodapeMenu, painelAcoesMenu, painelNav, painelTopoDireita);
+        painelRodapeMenu.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, Tema.BORDA), BorderFactory.createEmptyBorder(10, 0, 0, 0)));
+        scrollMenu.setBorder(BorderFactory.createEmptyBorder());
+        scrollMenu.setOpaque(false);
+        scrollMenu.getViewport().setOpaque(false);
+        scrollMenu.getVerticalScrollBar().setUnitIncrement(16);
+        painelPrincipal.setBackground(Tema.FUNDO);
+        painelConteudo.setBackground(Tema.FUNDO);
+        painelTopo.setBackground(Tema.FUNDO);
+        painelTopo.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, Tema.BORDA), painelTopo.getBorder()));
+        lblMarcaIcone.setIcon(new javax.swing.ImageIcon(Tema.icone(36)));
+        lblLogo.setForeground(Tema.DESTAQUE);
+        lblSlogan.setForeground(Tema.TEXTO_FRACO);
+        lblCaminho.setForeground(Tema.TEXTO_SECUNDARIO);
+        lblRelogio.setForeground(Tema.TEXTO_SECUNDARIO);
+        lblRelogio.setIcon(Icones.comCor("clock", 16, () -> Tema.TEXTO_SECUNDARIO));
+        lblRelogio.setIconTextGap(6);
 
-        for (javax.swing.JButton b : new javax.swing.JButton[]{btnVisaoGeral, btnCaixa, btnMesas, btnPedidos, btnClientes, btnCozinha,
-            btnHistorico, btnProdutos, btnEstoque, btnRelatorio, btnUsuarios, btnSair}) {
-            b.putClientProperty("JButton.buttonType", "toolBarButton");
-            b.putClientProperty("FlatLaf.style", "margin: 9,12,9,12; font: +1; hoverBackground: #1F1F1E");
-            b.setFocusable(false);
-        }
-        // Item da tela atual
-        btnVisaoGeral.putClientProperty("FlatLaf.style",
-                "margin: 9,12,9,12; font: +1 bold; background: #2A2413; foreground: #F5A524");
-        btnVisaoGeral.putClientProperty("JButton.buttonType", null);
-        btnSair.setForeground(Tema.TEXTO_FRACO);
+        Usuario u = Sessao.usuario();
+        lblUsuarioLogado.setText(u == null ? "Não identificado"
+                : "<html><b>" + u.getNome() + "</b><br><span style='font-size:9pt'>" + u.getPerfil() + "</span></html>");
         lblUsuarioLogado.setForeground(Tema.TEXTO_SECUNDARIO);
-        getRootPane().setDefaultButton(null);
+        lblUsuarioLogado.setIcon(Icones.comCor("user", 18, () -> Tema.TEXTO_SECUNDARIO));
+        lblUsuarioLogado.setIconTextGap(10);
+        lblUsuarioLogado.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
+        for (JButton b : new JButton[]{btnTema, btnSair}) {
+            estiloMenu(b);
+            b.putClientProperty("FlatLaf.style", "margin: 8,8,8,8; hoverBackground: " + hex(Tema.HOVER));
+            b.setText(null);
+        }
+        btnTema.setToolTipText(Tema.isEscuro() ? "Usar tema claro" : "Usar tema escuro");
+        btnTema.setIcon(Icones.comCor(Tema.isEscuro() ? "sun" : "moon", 18, () -> Tema.TEXTO_SECUNDARIO));
+        btnSair.setIcon(Icones.comCor("log-out", 18, () -> Tema.TEXTO_SECUNDARIO));
     }
 
-    /** Busca os números em segundo plano para a tela não travar. */
-    private void carregarDados() {
-        btnAtualizar.setEnabled(false);
-        LocalDate hoje = LocalDate.now();
-        lblData.setText(capitalizar(hoje.format(DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", BR))));
-        new javax.swing.SwingWorker<Object[], Void>() {
-            @Override
-            protected Object[] doInBackground() throws Exception {
-                LocalDate seteDias = hoje.minusDays(6);
-                return new Object[]{
-                    dashboardDAO.resumo(hoje, hoje),
-                    dashboardDAO.resumo(hoje.minusDays(1), hoje.minusDays(1)),
-                    dashboardDAO.resumo(seteDias, hoje),
-                    dashboardDAO.faturamentoPorDia(seteDias, hoje),
-                    dashboardDAO.porFormaPagamento(seteDias, hoje),
-                    dashboardDAO.maisVendidos(seteDias, hoje, 5),
-                    dashboardDAO.estoqueBaixo()
-                };
-            }
+    private static void estiloMenu(JButton b) {
+        b.putClientProperty("JButton.buttonType", "toolBarButton");
+        b.setFocusable(false);
+        b.setHorizontalAlignment(JButton.LEFT);
+        b.setIconTextGap(12);
+        b.setForeground(Tema.TEXTO_SECUNDARIO);
+        b.putClientProperty("FlatLaf.style", "margin: 8,12,8,12; hoverBackground: " + hex(Tema.HOVER));
+        // Sem fundo próprio: um item que deixou de ser o selecionado não fica cinza.
+        b.setBackground(Tema.MENU);
+    }
 
-            @Override
-            @SuppressWarnings("unchecked")
-            protected void done() {
-                btnAtualizar.setEnabled(true);
-                try {
-                    Object[] r = get();
-                    mostrarIndicadores((DashboardDAO.Resumo) r[0], (DashboardDAO.Resumo) r[1], (DashboardDAO.Resumo) r[2],
-                            (List<DashboardDAO.Linha>) r[5], (List<Estoque>) r[6]);
-                    mostrarFaturamento((List<DashboardDAO.Linha>) r[3], (DashboardDAO.Resumo) r[2]);
-                    mostrarPagamentos((Map<FormaPagamento, DashboardDAO.Linha>) r[4]);
-                    mostrarMaisVendidos((List<DashboardDAO.Linha>) r[5]);
-                    mostrarEstoque((List<Estoque>) r[6]);
-                } catch (Exception e) {
-                    logger.log(java.util.logging.Level.WARNING, "Falha ao carregar o dashboard", e);
-                    javax.swing.JOptionPane.showMessageDialog(Main.this,
-                            "Não foi possível carregar os dados do dashboard.\n" + e.getMessage());
+    private static String hex(java.awt.Color c) {
+        return String.format("#%02X%02X%02X", c.getRed(), c.getGreen(), c.getBlue());
+    }
+
+    /** Menu lateral agrupado, só com os módulos que o perfil acessa. */
+    private void montarMenu() {
+        painelNav.setLayout(new BoxLayout(painelNav, BoxLayout.Y_AXIS));
+        painelNav.removeAll();
+        String grupoAtual = null;
+        for (Item i : ITENS) {
+            if (!Sessao.pode(i.modulo)) {
+                continue;
+            }
+            if (!i.grupo.equals(grupoAtual)) {
+                grupoAtual = i.grupo;
+                if (!i.grupo.isEmpty()) {
+                    JLabel cab = new JLabel(i.grupo.toUpperCase());
+                    cab.setFont(cab.getFont().deriveFont(Font.BOLD, 11f));
+                    cab.setForeground(Tema.TEXTO_FRACO);
+                    cab.setBorder(BorderFactory.createEmptyBorder(12, 12, 4, 0));
+                    cab.setAlignmentX(Component.LEFT_ALIGNMENT);
+                    painelNav.add(cab);
                 }
             }
-        }.execute();
+            JButton b = new JButton(i.rotulo);
+            estiloMenu(b);
+            b.setIcon(Icones.comCor(i.icone, 18, () -> Tema.TEXTO_SECUNDARIO));
+            b.setAlignmentX(Component.LEFT_ALIGNMENT);
+            b.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, 40));
+            b.addActionListener(e -> mostrar(i.criar.get()));
+            botoesMenu.put(i.tela, b);
+            painelNav.add(b);
+            painelNav.add(Box.createVerticalStrut(2));
+        }
+        painelNav.revalidate();
     }
 
-    private static String capitalizar(String s) {
-        return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
-    }
-
-    private void mostrarIndicadores(DashboardDAO.Resumo hoje, DashboardDAO.Resumo ontem, DashboardDAO.Resumo semana,
-            List<DashboardDAO.Linha> maisVendidos, List<Estoque> estoqueBaixo) {
-        cardFaturamento.setValor(Tema.reais(hoje.faturamento));
-        if (ontem.faturamento > 0) {
-            double variacao = (hoje.faturamento - ontem.faturamento) / ontem.faturamento * 100;
-            cardFaturamento.setTendencia(variacao >= 0 ? CartaoIndicador.Tendencia.ALTA : CartaoIndicador.Tendencia.BAIXA);
-            cardFaturamento.setDetalhe(String.format(BR, "%+.0f%% vs ontem (%s)", variacao, Tema.reais(ontem.faturamento)));
-        } else {
-            cardFaturamento.setTendencia(CartaoIndicador.Tendencia.NEUTRA);
-            cardFaturamento.setDetalhe("Sem vendas ontem");
-        }
-
-        cardVendas.setValor(String.valueOf(hoje.vendas));
-        cardVendas.setTendencia(CartaoIndicador.Tendencia.NEUTRA);
-        cardVendas.setDetalhe("Ontem: " + ontem.vendas + " | 7 dias: " + semana.vendas);
-
-        cardTicket.setValor(Tema.reais(hoje.ticketMedio()));
-        cardTicket.setTendencia(CartaoIndicador.Tendencia.NEUTRA);
-        cardTicket.setDetalhe("Média 7 dias: " + Tema.reais(semana.ticketMedio()));
-
-        if (maisVendidos.isEmpty()) {
-            cardMaisVendido.setValor("-");
-            cardMaisVendido.setDetalhe("Sem vendas no período");
-        } else {
-            DashboardDAO.Linha top = maisVendidos.get(0);
-            cardMaisVendido.setValor(top.nome);
-            cardMaisVendido.setDetalhe(top.quantidade + " unidades | " + Tema.reais(top.valor));
-        }
-
-        cardEstoque.setValor(String.valueOf(estoqueBaixo.size()));
-        if (estoqueBaixo.isEmpty()) {
-            cardEstoque.setTendencia(CartaoIndicador.Tendencia.NEUTRA);
-            cardEstoque.setDetalhe("Todos acima do mínimo");
-        } else {
-            cardEstoque.setTendencia(CartaoIndicador.Tendencia.AVISO);
-            cardEstoque.setDetalhe(estoqueBaixo.size() == 1 ? "item para repor" : "itens para repor");
+    private void marcarMenu(Class<?> tela) {
+        Class<?> alvo = SUBTELAS.containsKey(tela) ? (Class<?>) SUBTELAS.get(tela)[0] : tela;
+        for (Map.Entry<Class<?>, JButton> e : botoesMenu.entrySet()) {
+            JButton b = e.getValue();
+            boolean ativo = e.getKey().equals(alvo);
+            Item item = null;
+            for (Item i : ITENS) {
+                if (i.tela.equals(e.getKey())) {
+                    item = i;
+                }
+            }
+            if (ativo) {
+                b.putClientProperty("JButton.buttonType", null);
+                b.putClientProperty("FlatLaf.style", "margin: 8,12,8,12; font: bold; borderWidth: 0; focusWidth: 0;"
+                        + " background: " + hex(Tema.SELECIONADO) + "; foreground: " + hex(Tema.DESTAQUE));
+                b.setIcon(Icones.comCor(item.icone, 18, () -> Tema.DESTAQUE));
+            } else {
+                estiloMenu(b);
+                b.setIcon(Icones.comCor(item.icone, 18, () -> Tema.TEXTO_SECUNDARIO));
+            }
         }
     }
 
-    private void mostrarFaturamento(List<DashboardDAO.Linha> dias, DashboardDAO.Resumo semana) {
-        String[] rotulos = new String[dias.size()];
-        double[] valores = new double[dias.size()];
-        String[] dicas = new String[dias.size()];
-        DateTimeFormatter curto = DateTimeFormatter.ofPattern("EEE dd", BR);
-        DateTimeFormatter longo = DateTimeFormatter.ofPattern("EEEE, dd/MM", BR);
-        for (int i = 0; i < dias.size(); i++) {
-            DashboardDAO.Linha d = dias.get(i);
-            LocalDate dia = LocalDate.parse(d.nome);
-            rotulos[i] = dia.equals(LocalDate.now()) ? "Hoje" : dia.format(curto).replace(".", "");
-            valores[i] = d.valor;
-            dicas[i] = capitalizar(dia.format(longo)) + ": " + Tema.reais(d.valor)
-                    + " em " + d.quantidade + (d.quantidade == 1 ? " venda" : " vendas");
+    /** Caminho mostrado na barra superior: "Operação › Caixa › Nova venda". */
+    private String caminho(Class<?> tela) {
+        String sub = null;
+        Class<?> alvo = tela;
+        if (SUBTELAS.containsKey(tela)) {
+            alvo = (Class<?>) SUBTELAS.get(tela)[0];
+            sub = (String) SUBTELAS.get(tela)[1];
         }
-        graficoFaturamento.setSubtitulo("Últimos 7 dias | total " + Tema.reais(semana.faturamento)
-                + " em " + semana.vendas + " vendas");
-        graficoFaturamento.setDados(rotulos, valores, dicas);
+        for (Item i : ITENS) {
+            if (i.tela.equals(alvo)) {
+                String base = (i.grupo.isEmpty() ? "" : i.grupo + "   ›   ") + i.rotulo;
+                return sub == null ? base : base + "   ›   " + sub;
+            }
+        }
+        return "BLK Burguer";
     }
 
-    private void mostrarPagamentos(Map<FormaPagamento, DashboardDAO.Linha> formas) {
-        int n = formas.size();
-        String[] rotulos = new String[n];
-        double[] valores = new double[n];
-        int[] slots = new int[n];
-        String[] detalhes = new String[n];
-        int i = 0, totalVendas = 0;
-        for (Map.Entry<FormaPagamento, DashboardDAO.Linha> e : formas.entrySet()) {
-            // A cor segue a forma de pagamento (ordem fixa do enum), não a posição no ranking.
-            slots[i] = e.getKey().ordinal();
-            rotulos[i] = e.getKey().toString();
-            valores[i] = e.getValue().valor;
-            detalhes[i] = e.getValue().quantidade + (e.getValue().quantidade == 1 ? " venda | " : " vendas | ")
-                    + Tema.reais(e.getValue().valor);
-            totalVendas += e.getValue().quantidade;
-            i++;
+    private void mostrar(JPanel tela) {
+        if (telaAtual instanceof Navegavel) {
+            ((Navegavel) telaAtual).aoSair();
         }
-        graficoPagamentos.setCentro(String.valueOf(totalVendas), totalVendas == 1 ? "venda" : "vendas");
-        graficoPagamentos.setDados(rotulos, valores, slots, detalhes);
+        painelConteudo.removeAll();
+        painelConteudo.add(tela, BorderLayout.CENTER);
+        telaAtual = tela;
+        if (tela instanceof TelaCozinha) {
+            ((TelaCozinha) tela).modoTV(false);
+        }
+        Acabamento.aplicar(tela, true);
+        Object padrao = tela.getClientProperty("BLK.botaoPadrao");
+        getRootPane().setDefaultButton(padrao instanceof JButton ? (JButton) padrao : null);
+        lblCaminho.setText(caminho(tela.getClass()));
+        marcarMenu(tela.getClass());
+        setTitle("BLK Burguer - " + caminho(tela.getClass()).replace("   ›   ", " / "));
+        painelConteudo.revalidate();
+        painelConteudo.repaint();
+        tela.requestFocusInWindow();
     }
 
-    private void mostrarMaisVendidos(List<DashboardDAO.Linha> produtos) {
-        int n = produtos.size();
-        String[] rotulos = new String[n];
-        double[] valores = new double[n];
-        String[] textos = new String[n];
-        String[] dicas = new String[n];
-        for (int i = 0; i < n; i++) {
-            DashboardDAO.Linha p = produtos.get(i);
-            rotulos[i] = p.nome;
-            valores[i] = p.quantidade;
-            textos[i] = p.quantidade + " un.";
-            dicas[i] = p.nome + ": " + p.quantidade + " unidades | " + Tema.reais(p.valor);
-        }
-        graficoProdutos.setDados(rotulos, valores, textos, dicas);
+    private void atualizarRelogio() {
+        lblRelogio.setText(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")));
     }
 
-    private void mostrarEstoque(List<Estoque> itens) {
-        String[] nomes = new String[itens.size()];
-        int[] qtd = new int[itens.size()];
-        int[] min = new int[itens.size()];
-        for (int i = 0; i < itens.size(); i++) {
-            nomes[i] = itens.get(i).getNome();
-            qtd[i] = itens.get(i).getQuantidade();
-            min[i] = itens.get(i).getMinimo();
+    private void fechar() {
+        if (telaAtual instanceof Navegavel) {
+            ((Navegavel) telaAtual).aoSair();
         }
-        painelAlertas.setDados(nomes, qtd, min);
-    }
-
-    private void abrir(javax.swing.JFrame tela) {
-        tela.setVisible(true);
+        relogio.stop();
         dispose();
+        if (atual == this) {
+            atual = null;
+        }
     }
 
-    /** Abre a tela só se o perfil tiver acesso (proteção extra além do menu). */
-    private void abrirSePuder(Modulo modulo, java.util.function.Supplier<javax.swing.JFrame> tela) {
-        if (!Sessao.pode(modulo)) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Seu perfil não tem acesso a " + modulo + ".");
-            return;
+    /** Troca o tema e recria a janela na mesma tela (as cores são lidas na criação). */
+    private void trocarTema() {
+        Class<?> naTela = telaAtual == null ? null : telaAtual.getClass();
+        Tema.alternar();
+        java.awt.Rectangle limites = getBounds();
+        int estado = getExtendedState();
+        fechar();
+        Supplier<JPanel> recriar = null;
+        for (Item i : ITENS) {
+            if (i.tela.equals(naTela)) {
+                recriar = i.criar;
+            }
         }
-        abrir(tela.get());
+        navegar(recriar != null ? recriar.get() : telaInicial());
+        atual.setBounds(limites);
+        atual.setExtendedState(estado);
+        ui.Aviso.info(atual.painelConteudo, Tema.isEscuro() ? "Tema escuro ativado" : "Tema claro ativado");
     }
 
     @SuppressWarnings("unchecked")
@@ -329,353 +354,133 @@ public class Main extends javax.swing.JFrame {
     private void initComponents() {
 
         painelMenu = new javax.swing.JPanel();
-        painelNavegacao = new javax.swing.JPanel();
         painelMarca = new javax.swing.JPanel();
+        lblMarcaIcone = new javax.swing.JLabel();
+        painelMarcaTexto = new javax.swing.JPanel();
         lblLogo = new javax.swing.JLabel();
         lblSlogan = new javax.swing.JLabel();
-        painelBotoes = new javax.swing.JPanel();
-        btnVisaoGeral = new javax.swing.JButton();
-        btnCaixa = new javax.swing.JButton();
-        btnMesas = new javax.swing.JButton();
-        btnPedidos = new javax.swing.JButton();
-        btnClientes = new javax.swing.JButton();
-        btnCozinha = new javax.swing.JButton();
-        btnHistorico = new javax.swing.JButton();
-        btnProdutos = new javax.swing.JButton();
-        btnEstoque = new javax.swing.JButton();
-        btnRelatorio = new javax.swing.JButton();
-        btnUsuarios = new javax.swing.JButton();
-        painelRodape = new javax.swing.JPanel();
+        scrollMenu = new javax.swing.JScrollPane();
+        painelNav = new javax.swing.JPanel();
+        painelRodapeMenu = new javax.swing.JPanel();
         lblUsuarioLogado = new javax.swing.JLabel();
+        painelAcoesMenu = new javax.swing.JPanel();
+        btnTema = new javax.swing.JButton();
         btnSair = new javax.swing.JButton();
+        painelPrincipal = new javax.swing.JPanel();
+        painelTopo = new javax.swing.JPanel();
+        lblCaminho = new javax.swing.JLabel();
+        painelTopoDireita = new javax.swing.JPanel();
+        lblRelogio = new javax.swing.JLabel();
         painelConteudo = new javax.swing.JPanel();
-        painelCabecalho = new javax.swing.JPanel();
-        painelTitulo = new javax.swing.JPanel();
-        lblTitulo = new javax.swing.JLabel();
-        lblData = new javax.swing.JLabel();
-        painelAcoes = new javax.swing.JPanel();
-        btnAtualizar = new javax.swing.JButton();
-        painelCorpo = new javax.swing.JPanel();
-        painelIndicadores = new javax.swing.JPanel();
-        cardFaturamento = new ui.CartaoIndicador();
-        cardVendas = new ui.CartaoIndicador();
-        cardTicket = new ui.CartaoIndicador();
-        cardMaisVendido = new ui.CartaoIndicador();
-        cardEstoque = new ui.CartaoIndicador();
-        painelGraficos = new javax.swing.JPanel();
-        graficoFaturamento = new ui.GraficoColunas();
-        graficoPagamentos = new ui.GraficoRosca();
-        graficoProdutos = new ui.GraficoBarras();
-        painelAlertas = new ui.PainelAlertas();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("BLK Burguer");
         setMinimumSize(new java.awt.Dimension(1180, 720));
 
-        painelMenu.setBorder(javax.swing.BorderFactory.createEmptyBorder(22, 16, 20, 16));
-        painelMenu.setPreferredSize(new java.awt.Dimension(232, 0));
-        painelMenu.setLayout(new java.awt.BorderLayout());
-        painelNavegacao.setLayout(new java.awt.BorderLayout(0, 24));
-        painelMarca.setLayout(new java.awt.GridLayout(2, 1, 0, 2));
-        lblLogo.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
+        painelMenu.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 14, 16, 14));
+        painelMenu.setPreferredSize(new java.awt.Dimension(248, 0));
+        painelMenu.setLayout(new java.awt.BorderLayout(0, 18));
+        painelMarca.setLayout(new java.awt.BorderLayout(10, 0));
+        painelMarca.add(lblMarcaIcone, java.awt.BorderLayout.LINE_START);
+
+        painelMarcaTexto.setLayout(new java.awt.GridLayout(2, 1, 0, 0));
+        lblLogo.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         lblLogo.setText("BLK BURGUER");
-        painelMarca.add(lblLogo);
+        painelMarcaTexto.add(lblLogo);
 
         lblSlogan.setText("Gestão da hamburgueria");
-        painelMarca.add(lblSlogan);
+        painelMarcaTexto.add(lblSlogan);
 
-        painelNavegacao.add(painelMarca, java.awt.BorderLayout.PAGE_START);
+        painelMarca.add(painelMarcaTexto, java.awt.BorderLayout.CENTER);
 
-        painelBotoes.setLayout(new java.awt.GridLayout(0, 1, 0, 6));
-        btnVisaoGeral.setText("Visão geral");
-        btnVisaoGeral.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnVisaoGeral.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnVisaoGeralActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnVisaoGeral);
+        painelMenu.add(painelMarca, java.awt.BorderLayout.PAGE_START);
 
-        btnCaixa.setText("Caixa");
-        btnCaixa.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnCaixa.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnCaixaActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnCaixa);
+        scrollMenu.setViewportView(painelNav);
+        painelMenu.add(scrollMenu, java.awt.BorderLayout.CENTER);
 
-        btnMesas.setText("Mesas");
-        btnMesas.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnMesas.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnMesasActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnMesas);
-
-        btnPedidos.setText("Pedidos");
-        btnPedidos.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnPedidos.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnPedidosActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnPedidos);
-
-        btnClientes.setText("Clientes");
-        btnClientes.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnClientes.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnClientesActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnClientes);
-
-        btnCozinha.setText("Cozinha");
-        btnCozinha.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnCozinha.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnCozinhaActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnCozinha);
-
-        btnHistorico.setText("Histórico de vendas");
-        btnHistorico.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnHistorico.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnHistoricoActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnHistorico);
-
-        btnProdutos.setText("Produtos");
-        btnProdutos.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnProdutos.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnProdutosActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnProdutos);
-
-        btnEstoque.setText("Estoque");
-        btnEstoque.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnEstoque.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnEstoqueActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnEstoque);
-
-        btnRelatorio.setText("Relatórios");
-        btnRelatorio.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnRelatorio.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnRelatorioActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnRelatorio);
-
-        btnUsuarios.setText("Usuários");
-        btnUsuarios.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        btnUsuarios.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnUsuariosActionPerformed(evt);
-            }
-        });
-        painelBotoes.add(btnUsuarios);
-
-        painelNavegacao.add(painelBotoes, java.awt.BorderLayout.CENTER);
-
-        painelMenu.add(painelNavegacao, java.awt.BorderLayout.PAGE_START);
-
-        painelRodape.setLayout(new java.awt.GridLayout(2, 1, 0, 6));
+        painelRodapeMenu.setLayout(new java.awt.BorderLayout(4, 0));
         lblUsuarioLogado.setText("usuário");
-        painelRodape.add(lblUsuarioLogado);
+        painelRodapeMenu.add(lblUsuarioLogado, java.awt.BorderLayout.CENTER);
 
-        btnSair.setText("Sair / trocar usuário");
-        btnSair.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        painelAcoesMenu.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 2, 0));
+        btnTema.setToolTipText("Alternar tema claro/escuro");
+        btnTema.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnTemaActionPerformed(evt);
+            }
+        });
+        painelAcoesMenu.add(btnTema);
+
+        btnSair.setToolTipText("Sair / trocar usuário");
         btnSair.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSairActionPerformed(evt);
             }
         });
-        painelRodape.add(btnSair);
+        painelAcoesMenu.add(btnSair);
 
-        painelMenu.add(painelRodape, java.awt.BorderLayout.PAGE_END);
+        painelRodapeMenu.add(painelAcoesMenu, java.awt.BorderLayout.LINE_END);
+
+        painelMenu.add(painelRodapeMenu, java.awt.BorderLayout.PAGE_END);
 
         getContentPane().add(painelMenu, java.awt.BorderLayout.LINE_START);
 
-        painelConteudo.setBorder(javax.swing.BorderFactory.createEmptyBorder(22, 24, 24, 24));
-        painelConteudo.setLayout(new java.awt.BorderLayout(0, 18));
-        painelCabecalho.setLayout(new java.awt.BorderLayout());
-        painelTitulo.setLayout(new java.awt.GridLayout(2, 1, 0, 2));
-        lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 22)); // NOI18N
-        lblTitulo.setText("Visão geral");
-        painelTitulo.add(lblTitulo);
+        painelPrincipal.setLayout(new java.awt.BorderLayout());
+        painelTopo.setBorder(javax.swing.BorderFactory.createEmptyBorder(12, 24, 12, 24));
+        painelTopo.setLayout(new java.awt.BorderLayout());
+        lblCaminho.setText("Início");
+        painelTopo.add(lblCaminho, java.awt.BorderLayout.LINE_START);
 
-        lblData.setText("hoje");
-        painelTitulo.add(lblData);
+        painelTopoDireita.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 14, 0));
+        lblRelogio.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        lblRelogio.setText("00:00");
+        painelTopoDireita.add(lblRelogio);
 
-        painelCabecalho.add(painelTitulo, java.awt.BorderLayout.LINE_START);
+        painelTopo.add(painelTopoDireita, java.awt.BorderLayout.LINE_END);
 
-        painelAcoes.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 8));
-        btnAtualizar.setText("Atualizar");
-        btnAtualizar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnAtualizarActionPerformed(evt);
-            }
-        });
-        painelAcoes.add(btnAtualizar);
+        painelPrincipal.add(painelTopo, java.awt.BorderLayout.PAGE_START);
 
-        painelCabecalho.add(painelAcoes, java.awt.BorderLayout.LINE_END);
+        painelConteudo.setLayout(new java.awt.BorderLayout());
+        painelPrincipal.add(painelConteudo, java.awt.BorderLayout.CENTER);
 
-        painelConteudo.add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
-
-        painelCorpo.setLayout(new java.awt.BorderLayout(0, 16));
-        painelIndicadores.setLayout(new java.awt.GridLayout(1, 5, 14, 0));
-        cardFaturamento.setTitulo("Faturamento hoje");
-        cardFaturamento.setPrincipal(true);
-        painelIndicadores.add(cardFaturamento);
-
-        cardVendas.setTitulo("Vendas hoje");
-        painelIndicadores.add(cardVendas);
-
-        cardTicket.setTitulo("Ticket médio hoje");
-        painelIndicadores.add(cardTicket);
-
-        cardMaisVendido.setTitulo("Mais vendido (7 dias)");
-        painelIndicadores.add(cardMaisVendido);
-
-        cardEstoque.setTitulo("Estoque baixo");
-        painelIndicadores.add(cardEstoque);
-
-        painelCorpo.add(painelIndicadores, java.awt.BorderLayout.PAGE_START);
-
-        painelGraficos.setLayout(new java.awt.GridLayout(2, 2, 16, 16));
-        graficoFaturamento.setTitulo("Faturamento por dia");
-        graficoFaturamento.setSubtitulo("Últimos 7 dias");
-        painelGraficos.add(graficoFaturamento);
-
-        graficoPagamentos.setTitulo("Formas de pagamento");
-        graficoPagamentos.setSubtitulo("Últimos 7 dias");
-        painelGraficos.add(graficoPagamentos);
-
-        graficoProdutos.setTitulo("Mais vendidos");
-        graficoProdutos.setSubtitulo("Últimos 7 dias, por quantidade");
-        painelGraficos.add(graficoProdutos);
-
-        painelAlertas.setTitulo("Estoque baixo");
-        painelAlertas.setSubtitulo("Itens abaixo da quantidade mínima");
-        painelGraficos.add(painelAlertas);
-
-        painelCorpo.add(painelGraficos, java.awt.BorderLayout.CENTER);
-
-        painelConteudo.add(painelCorpo, java.awt.BorderLayout.CENTER);
-
-        getContentPane().add(painelConteudo, java.awt.BorderLayout.CENTER);
+        getContentPane().add(painelPrincipal, java.awt.BorderLayout.CENTER);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void btnVisaoGeralActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVisaoGeralActionPerformed
-        carregarDados();
-    }//GEN-LAST:event_btnVisaoGeralActionPerformed
-
-    private void btnHistoricoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHistoricoActionPerformed
-        abrirSePuder(Modulo.HISTORICO, TelaHistoricoVendas::new);
-    }//GEN-LAST:event_btnHistoricoActionPerformed
-
-    private void btnProdutosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnProdutosActionPerformed
-        abrirSePuder(Modulo.PRODUTOS, TelaProdutos::new);
-    }//GEN-LAST:event_btnProdutosActionPerformed
-
-    private void btnEstoqueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEstoqueActionPerformed
-        abrirSePuder(Modulo.ESTOQUE, TelaEstoque::new);
-    }//GEN-LAST:event_btnEstoqueActionPerformed
-
-    private void btnRelatorioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRelatorioActionPerformed
-        abrirSePuder(Modulo.RELATORIOS, TelaRelatorio::new);
-    }//GEN-LAST:event_btnRelatorioActionPerformed
+    private void btnTemaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTemaActionPerformed
+        trocarTema();
+    }//GEN-LAST:event_btnTemaActionPerformed
 
     private void btnSairActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSairActionPerformed
         sair(this);
     }//GEN-LAST:event_btnSairActionPerformed
 
-    private void btnCaixaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCaixaActionPerformed
-        abrirSePuder(Modulo.CAIXA, TelaCaixa::new);
-    }//GEN-LAST:event_btnCaixaActionPerformed
-
-    private void btnMesasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMesasActionPerformed
-        abrirSePuder(Modulo.MESAS, TelaMesas::new);
-    }//GEN-LAST:event_btnMesasActionPerformed
-
-    private void btnPedidosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPedidosActionPerformed
-        abrirSePuder(Modulo.PEDIDOS, TelaPedidos::new);
-    }//GEN-LAST:event_btnPedidosActionPerformed
-
-    private void btnClientesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClientesActionPerformed
-        abrirSePuder(Modulo.CLIENTES, TelaClientes::new);
-    }//GEN-LAST:event_btnClientesActionPerformed
-
-    private void btnCozinhaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCozinhaActionPerformed
-        abrirSePuder(Modulo.COZINHA, TelaCozinha::new);
-    }//GEN-LAST:event_btnCozinhaActionPerformed
-
-    private void btnUsuariosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUsuariosActionPerformed
-        abrirSePuder(Modulo.USUARIOS, TelaUsuarios::new);
-    }//GEN-LAST:event_btnUsuariosActionPerformed
-
-    private void btnAtualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAtualizarActionPerformed
-        carregarDados();
-    }//GEN-LAST:event_btnAtualizarActionPerformed
-
     public static void main(String args[]) {
+        // Sem login a janela não tem permissões: o sistema sempre começa pelo Login.
         Tema.aplicar();
-        // Sem login a tela não tem permissões: sempre começa pelo Login.
         java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnAtualizar;
-    private javax.swing.JButton btnCaixa;
-    private javax.swing.JButton btnClientes;
-    private javax.swing.JButton btnCozinha;
-    private javax.swing.JButton btnEstoque;
-    private javax.swing.JButton btnHistorico;
-    private javax.swing.JButton btnMesas;
-    private javax.swing.JButton btnPedidos;
-    private javax.swing.JButton btnProdutos;
-    private javax.swing.JButton btnRelatorio;
     private javax.swing.JButton btnSair;
-    private javax.swing.JButton btnUsuarios;
-    private javax.swing.JButton btnVisaoGeral;
-    private ui.CartaoIndicador cardEstoque;
-    private ui.CartaoIndicador cardFaturamento;
-    private ui.CartaoIndicador cardMaisVendido;
-    private ui.CartaoIndicador cardTicket;
-    private ui.CartaoIndicador cardVendas;
-    private ui.GraficoColunas graficoFaturamento;
-    private ui.GraficoRosca graficoPagamentos;
-    private ui.GraficoBarras graficoProdutos;
-    private javax.swing.JLabel lblData;
+    private javax.swing.JButton btnTema;
+    private javax.swing.JLabel lblCaminho;
     private javax.swing.JLabel lblLogo;
+    private javax.swing.JLabel lblMarcaIcone;
+    private javax.swing.JLabel lblRelogio;
     private javax.swing.JLabel lblSlogan;
-    private javax.swing.JLabel lblTitulo;
     private javax.swing.JLabel lblUsuarioLogado;
-    private javax.swing.JPanel painelAcoes;
-    private ui.PainelAlertas painelAlertas;
-    private javax.swing.JPanel painelBotoes;
-    private javax.swing.JPanel painelCabecalho;
+    private javax.swing.JPanel painelAcoesMenu;
     private javax.swing.JPanel painelConteudo;
-    private javax.swing.JPanel painelCorpo;
-    private javax.swing.JPanel painelGraficos;
-    private javax.swing.JPanel painelIndicadores;
     private javax.swing.JPanel painelMarca;
+    private javax.swing.JPanel painelMarcaTexto;
     private javax.swing.JPanel painelMenu;
-    private javax.swing.JPanel painelNavegacao;
-    private javax.swing.JPanel painelRodape;
-    private javax.swing.JPanel painelTitulo;
+    private javax.swing.JPanel painelNav;
+    private javax.swing.JPanel painelPrincipal;
+    private javax.swing.JPanel painelRodapeMenu;
+    private javax.swing.JPanel painelTopo;
+    private javax.swing.JPanel painelTopoDireita;
+    private javax.swing.JScrollPane scrollMenu;
     // End of variables declaration//GEN-END:variables
 }

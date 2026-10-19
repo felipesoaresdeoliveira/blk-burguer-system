@@ -34,3 +34,7 @@ Thumbs.db
 
 # Configuração local do banco (credenciais)
 db.properties
+
+# Backups do banco (dados reais)
+/backups/
+*.backup

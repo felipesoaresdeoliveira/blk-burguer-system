@@ -19,18 +19,24 @@ import ui.CartaoMesa;
 import ui.Tema;
 
 /** Mapa de mesas (#27): status por cor e texto, abertura de comanda, reserva e cadastro. */
-public class TelaMesas extends javax.swing.JFrame {
+public class TelaMesas extends javax.swing.JPanel implements Navegavel {
 
     private final MesaDAO mesaDAO = new MesaDAO();
     private final PedidoService pedidoService = new PedidoService();
     private final boolean podeGerenciar = Sessao.pode(Modulo.CADASTROS);
     private final Timer timer;
+
+    @Override
+    public void aoSair() {
+        if (timer != null) {
+            timer.stop();
+        }
+    }
     private List<Mesa> mesas = new ArrayList<>();
     private boolean carregando;
 
     public TelaMesas() {
         initComponents();
-        Tema.janela(this);
         Tema.titulo(lblTitulo);
         Tema.secundario(lblSubtitulo);
         Tema.transparente(painelCabecalho, painelTitulo, painelAcoesTopo, painelCorpo);
@@ -40,10 +46,16 @@ public class TelaMesas extends javax.swing.JFrame {
         scrollMapa.getVerticalScrollBar().setUnitIncrement(24);
         painelMapa.setBackground(Tema.FUNDO);
         painelMapa.setLayout(new java.awt.GridLayout(0, 5, 16, 16));
+        scrollMapa.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollMapa.getViewport().addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                ajustarColunas();
+            }
+        });
         timer = new Timer(5000, e -> carregar());
         timer.start();
         carregar();
-        Tema.tamanhoPadrao(this);
     }
 
     private void carregar() {
@@ -96,6 +108,17 @@ public class TelaMesas extends javax.swing.JFrame {
         painelMapa.repaint();
     }
 
+    /** Quantas mesas cabem por linha na largura disponível. */
+    private void ajustarColunas() {
+        int largura = scrollMapa.getViewport().getWidth();
+        int colunas = Math.max(1, (largura + 16) / (200 + 16));
+        java.awt.GridLayout g = (java.awt.GridLayout) painelMapa.getLayout();
+        if (g.getColumns() != colunas) {
+            g.setColumns(colunas);
+            painelMapa.revalidate();
+        }
+    }
+
     private void clicar(Mesa m) {
         if (m.getPedidoId() > 0) {
             abrirComanda(m.getPedidoId());
@@ -130,9 +153,7 @@ public class TelaMesas extends javax.swing.JFrame {
     }
 
     private void abrirComanda(int pedidoId) {
-        timer.stop();
-        dispose();
-        new TelaComanda(pedidoId, TelaComanda.Origem.MESAS).setVisible(true);
+        Main.navegar(new TelaComanda(pedidoId, TelaComanda.Origem.MESAS));
     }
 
     /** Botão direito: reservar/liberar e, para gerente/admin, editar e remover. */
@@ -244,9 +265,7 @@ public class TelaMesas extends javax.swing.JFrame {
         scrollMapa = new javax.swing.JScrollPane();
         painelMapa = new javax.swing.JPanel();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("BLK Burguer - Mesas");
-        setMinimumSize(new java.awt.Dimension(1180, 720));
+        setLayout(new java.awt.BorderLayout());
 
         painelCabecalho.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 24, 14, 24));
         painelCabecalho.setLayout(new java.awt.BorderLayout());
@@ -287,7 +306,7 @@ public class TelaMesas extends javax.swing.JFrame {
 
         painelCabecalho.add(painelAcoesTopo, java.awt.BorderLayout.LINE_END);
 
-        getContentPane().add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
+        add(painelCabecalho, java.awt.BorderLayout.PAGE_START);
 
         painelCorpo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 24, 24, 24));
         painelCorpo.setLayout(new java.awt.BorderLayout(20, 16));
@@ -297,9 +316,8 @@ public class TelaMesas extends javax.swing.JFrame {
         scrollMapa.setViewportView(painelMapa);
         painelCorpo.add(scrollMapa, java.awt.BorderLayout.CENTER);
 
-        getContentPane().add(painelCorpo, java.awt.BorderLayout.CENTER);
+        add(painelCorpo, java.awt.BorderLayout.CENTER);
 
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnNovaMesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNovaMesaActionPerformed
@@ -311,7 +329,6 @@ public class TelaMesas extends javax.swing.JFrame {
     }//GEN-LAST:event_btnAtualizarActionPerformed
 
     private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed
-        timer.stop();
         Main.voltar(this);
     }//GEN-LAST:event_btnVoltarActionPerformed
 
