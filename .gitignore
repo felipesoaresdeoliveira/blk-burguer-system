@@ -17,6 +17,7 @@
 
 # Pacotes/artefatos gerados
 *.jar
+!/lib/*.jar
 *.war
 *.nar
 *.ear
