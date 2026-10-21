@@ -32,7 +32,7 @@ public final class ConexaoBD {
     private static final String USUARIO_PADRAO = "postgres";
 
     /** Quantas conexões ficam guardadas para reaproveitar. */
-    private static final int MAXIMO_GUARDADAS = 4;
+    private static final int MAXIMO_GUARDADAS = 8;
 
     /** Uma conexão guardada passa a ser conferida se ficou parada mais que isto. */
     private static final long PARADA_MAXIMA_MS = 30_000;
@@ -60,6 +60,25 @@ public final class ConexaoBD {
             real = abrirNova();
         }
         return embrulhar(real);
+    }
+
+    /**
+     * Abre conexões em segundo plano e deixa guardadas, para a primeira tela
+     * não esperar a conexão ser criada. Chamado quando a tela de login abre.
+     */
+    public static void aquecer(int quantidade) {
+        for (int i = 0; i < quantidade; i++) {
+            Thread t = new Thread(() -> {
+                try {
+                    Connection nova = abrirNova();
+                    devolver(nova);
+                } catch (SQLException e) {
+                    // Sem banco agora: a consulta de verdade mostrará o erro.
+                }
+            });
+            t.setDaemon(true);
+            t.start();
+        }
     }
 
     private static Connection abrirNova() throws SQLException {

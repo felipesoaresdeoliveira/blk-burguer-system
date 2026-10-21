@@ -6,6 +6,9 @@ import entidades.FormaPagamento;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.Locale;
 import java.util.Map;
 import ui.CartaoIndicador;
@@ -36,16 +39,22 @@ public class TelaVisaoGeral extends javax.swing.JPanel implements Navegavel {
         new javax.swing.SwingWorker<Object[], Void>() {
             @Override
             protected Object[] doInBackground() throws Exception {
+                // As 7 consultas rodam ao mesmo tempo: o tempo total é o da mais lenta, não a soma.
                 LocalDate seteDias = hoje.minusDays(6);
-                return new Object[]{
-                    dashboardDAO.resumo(hoje, hoje),
-                    dashboardDAO.resumo(hoje.minusDays(1), hoje.minusDays(1)),
-                    dashboardDAO.resumo(seteDias, hoje),
-                    dashboardDAO.faturamentoPorDia(seteDias, hoje),
-                    dashboardDAO.porFormaPagamento(seteDias, hoje),
-                    dashboardDAO.maisVendidos(seteDias, hoje, 5),
-                    dashboardDAO.estoqueBaixo()
-                };
+                ExecutorService executor = Executors.newFixedThreadPool(7);
+                try {
+                    Future<Object> hojeResumo = executor.submit(() -> dashboardDAO.resumo(hoje, hoje));
+                    Future<Object> ontemResumo = executor.submit(() -> dashboardDAO.resumo(hoje.minusDays(1), hoje.minusDays(1)));
+                    Future<Object> semanaResumo = executor.submit(() -> dashboardDAO.resumo(seteDias, hoje));
+                    Future<Object> porDia = executor.submit(() -> dashboardDAO.faturamentoPorDia(seteDias, hoje));
+                    Future<Object> formas = executor.submit(() -> dashboardDAO.porFormaPagamento(seteDias, hoje));
+                    Future<Object> maisVendidos = executor.submit(() -> dashboardDAO.maisVendidos(seteDias, hoje, 5));
+                    Future<Object> estoque = executor.submit(() -> dashboardDAO.estoqueBaixo());
+                    return new Object[]{hojeResumo.get(), ontemResumo.get(), semanaResumo.get(), porDia.get(),
+                        formas.get(), maisVendidos.get(), estoque.get()};
+                } finally {
+                    executor.shutdown();
+                }
             }
 
             @Override
