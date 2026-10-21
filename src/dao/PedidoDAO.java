@@ -153,11 +153,30 @@ public class PedidoDAO {
             while (rs.next()) {
                 pedidos.add(ler(rs));
             }
-            for (Pedido p : pedidos) {
-                p.setItens(itens(con, p.getId()));
-            }
+            carregarItens(con, pedidos);
         }
         return pedidos;
+    }
+
+    /** Busca os itens de todos os pedidos da lista numa consulta só (em vez de uma por pedido). */
+    private void carregarItens(Connection con, List<Pedido> pedidos) throws SQLException {
+        if (pedidos.isEmpty()) {
+            return;
+        }
+        Map<Integer, Pedido> porId = new LinkedHashMap<>();
+        for (Pedido p : pedidos) {
+            porId.put(p.getId(), p);
+        }
+        Integer[] ids = porId.keySet().toArray(new Integer[0]);
+        try (PreparedStatement pst = con.prepareStatement(
+                "SELECT * FROM \"Venda\" WHERE pedido_id = ANY (?) ORDER BY id")) {
+            pst.setArray(1, con.createArrayOf("integer", ids));
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    porId.get(rs.getInt("pedido_id")).getItens().add(lerItem(rs));
+                }
+            }
+        }
     }
 
     /**
