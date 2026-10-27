@@ -12,6 +12,7 @@ public class Login extends javax.swing.JFrame {
     private final service.UsuarioService usuarioService = new service.UsuarioService();
 
     public Login() {
+        config.ConexaoBD.aquecer(7);
         initComponents();
         Tema.janela(this);
         setResizable(false);
