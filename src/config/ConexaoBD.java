@@ -87,10 +87,24 @@ public final class ConexaoBD {
         } catch (ClassNotFoundException e) {
             throw new SQLException("Driver JDBC do PostgreSQL não encontrado no classpath.", e);
         }
-        return DriverManager.getConnection(
+        Connection nova = DriverManager.getConnection(
                 valor("BLK_DB_URL", "db.url", URL_PADRAO),
                 valor("BLK_DB_USER", "db.user", USUARIO_PADRAO),
                 valor("BLK_DB_PASSWORD", "db.password", ""));
+        usarFusoDoComputador(nova);
+        return nova;
+    }
+
+    /**
+     * Servidores na nuvem (como o Supabase) trabalham em UTC, 3 horas à frente
+     * do Brasil. Sem este ajuste, a hora gravada pelo banco (NOW) fica diferente
+     * da hora do computador e o tempo dos pedidos aparece errado (até negativo).
+     */
+    private static void usarFusoDoComputador(Connection con) throws SQLException {
+        String fuso = java.time.ZoneId.systemDefault().getId().replace("'", "");
+        try (java.sql.Statement st = con.createStatement()) {
+            st.execute("SET TIME ZONE '" + fuso + "'");
+        }
     }
 
     private static Connection pegarGuardada() {
