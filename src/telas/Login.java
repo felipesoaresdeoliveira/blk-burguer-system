@@ -1,10 +1,9 @@
 package telas;
 
-import java.awt.Color;
-import javax.swing.JLabel;
 import ui.Icones;
 import ui.Tema;
 
+/** Tela de login: um cartão no centro com usuário, senha e o botão Entrar. */
 public class Login extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Login.class.getName());
@@ -12,45 +11,37 @@ public class Login extends javax.swing.JFrame {
     private final service.UsuarioService usuarioService = new service.UsuarioService();
 
     public Login() {
+        // Abre as conexões com o banco enquanto a pessoa digita (deixa o login mais rápido).
         config.ConexaoBD.aquecer(7);
         initComponents();
         Tema.janela(this);
-        setResizable(false);
         estilizar();
-        // Enter em qualquer campo aciona o botão Entrar.
-        getRootPane().setDefaultButton(btnEntrar);
-        setSize(900, 560);
+        getRootPane().setDefaultButton(btnEntrar); // Enter aciona o botão Entrar
+        setResizable(false);
         setLocationRelativeTo(null);
     }
 
+    /** Cores e ícones do tema (os textos e o layout estão no Login.form). */
     private void estilizar() {
         getContentPane().setBackground(Tema.FUNDO);
-        Tema.transparente(painelMarcaTopo, painelMarcaTexto, painelDestaques, painelEntrar, painelFormulario,
-                painelTitulo, painelCampos, painelAcao, painelRodape);
+        Tema.transparente(painelFundo, painelMarca, painelTitulo, painelCampos, painelAcao);
+        Tema.cartao(painelCartao);
 
-        // Painel da marca: sempre escuro, nos dois temas.
-        painelMarca.setBackground(new Color(0x1C1A17));
-        lblMarcaIcone.setIcon(new javax.swing.ImageIcon(Tema.icone(56)));
-        lblMarca.setForeground(Tema.AMBAR);
-        lblMarcaSlogan.setForeground(new Color(0xB8B2A7));
-        lblRodapeMarca.setForeground(new Color(0x8A847A));
-        destaque(lblDestaque1, "shopping-cart");
-        destaque(lblDestaque2, "chef-hat");
-        destaque(lblDestaque3, "chart-column");
-
-        Tema.titulo(lblTitulo);
+        lblLogo.setIcon(new javax.swing.ImageIcon(Tema.icone(56)));
+        lblTitulo.setForeground(Tema.DESTAQUE);
         Tema.secundario(lblSubtitulo);
         lblUsuario.setForeground(Tema.TEXTO_SECUNDARIO);
         lblSenha.setForeground(Tema.TEXTO_SECUNDARIO);
         lblMensagem.setForeground(Tema.PERIGO);
-        Tema.primario(btnEntrar);
-        btnEntrar.putClientProperty("FlatLaf.style", btnEntrar.getClientProperty("FlatLaf.style") + "; margin: 10,14,10,14");
-        btnEntrar.setIcon(Icones.get("log-in", 18, Tema.DESTAQUE_TEXTO));
-        campoUsuario.putClientProperty("JTextField.placeholderText", "seu usuário ou e-mail");
+
+        campoUsuario.putClientProperty("JTextField.placeholderText", "seu usuário");
         campoUsuario.putClientProperty("JTextField.leadingIcon", Icones.get("user", 16, Tema.TEXTO_FRACO));
         campoSenha.putClientProperty("JTextField.placeholderText", "sua senha");
         campoSenha.putClientProperty("JTextField.leadingIcon", Icones.get("lock", 16, Tema.TEXTO_FRACO));
         campoSenha.putClientProperty("FlatLaf.style", "showRevealButton: true");
+
+        Tema.primario(btnEntrar);
+        btnEntrar.setIcon(Icones.get("log-in", 18, Tema.DESTAQUE_TEXTO));
 
         btnTema.setText(Tema.isEscuro() ? "Tema claro" : "Tema escuro");
         btnTema.setIcon(Icones.get(Tema.isEscuro() ? "sun" : "moon", 16));
@@ -58,34 +49,18 @@ public class Login extends javax.swing.JFrame {
         btnTema.setForeground(Tema.TEXTO_SECUNDARIO);
     }
 
-    private static void destaque(JLabel l, String icone) {
-        l.setIcon(Icones.get(icone, 20, Tema.AMBAR));
-        l.setIconTextGap(12);
-        l.setForeground(new Color(0xE8E4DC));
-        l.setFont(l.getFont().deriveFont(14f));
-    }
-
     private void mostrarMensagem(String texto) {
-        lblMensagem.setText(texto == null ? " " : "<html>" + texto + "</html>");
+        lblMensagem.setText(texto == null ? " " : "<html><div style='text-align:center'>" + texto + "</div></html>");
     }
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        painelFundo = new javax.swing.JPanel();
+        painelCartao = new javax.swing.JPanel();
         painelMarca = new javax.swing.JPanel();
-        painelMarcaTopo = new javax.swing.JPanel();
-        lblMarcaIcone = new javax.swing.JLabel();
-        painelMarcaTexto = new javax.swing.JPanel();
-        lblMarca = new javax.swing.JLabel();
-        lblMarcaSlogan = new javax.swing.JLabel();
-        painelDestaques = new javax.swing.JPanel();
-        lblDestaque1 = new javax.swing.JLabel();
-        lblDestaque2 = new javax.swing.JLabel();
-        lblDestaque3 = new javax.swing.JLabel();
-        lblRodapeMarca = new javax.swing.JLabel();
-        painelEntrar = new javax.swing.JPanel();
-        painelFormulario = new javax.swing.JPanel();
+        lblLogo = new javax.swing.JLabel();
         painelTitulo = new javax.swing.JPanel();
         lblTitulo = new javax.swing.JLabel();
         lblSubtitulo = new javax.swing.JLabel();
@@ -97,59 +72,33 @@ public class Login extends javax.swing.JFrame {
         painelAcao = new javax.swing.JPanel();
         lblMensagem = new javax.swing.JLabel();
         btnEntrar = new javax.swing.JButton();
-        painelRodape = new javax.swing.JPanel();
         btnTema = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("BLK Burguer - Entrar");
 
-        painelMarca.setBorder(javax.swing.BorderFactory.createEmptyBorder(48, 44, 36, 44));
-        painelMarca.setPreferredSize(new java.awt.Dimension(380, 0));
-        painelMarca.setLayout(new java.awt.BorderLayout(0, 24));
-        painelMarcaTopo.setLayout(new java.awt.BorderLayout(0, 14));
-        painelMarcaTopo.add(lblMarcaIcone, java.awt.BorderLayout.PAGE_START);
+        painelFundo.setBorder(javax.swing.BorderFactory.createEmptyBorder(28, 28, 28, 28));
+        painelFundo.setLayout(new java.awt.BorderLayout(0, 0));
+        painelCartao.setBorder(javax.swing.BorderFactory.createEmptyBorder(36, 40, 24, 40));
+        painelCartao.setPreferredSize(new java.awt.Dimension(400, 470));
+        painelCartao.setLayout(new java.awt.BorderLayout(0, 20));
+        painelMarca.setLayout(new java.awt.BorderLayout(0, 10));
+        lblLogo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        painelMarca.add(lblLogo, java.awt.BorderLayout.PAGE_START);
 
-        painelMarcaTexto.setLayout(new java.awt.GridLayout(2, 1, 0, 2));
-        lblMarca.setFont(new java.awt.Font("Segoe UI", 1, 28)); // NOI18N
-        lblMarca.setText("BLK BURGUER");
-        painelMarcaTexto.add(lblMarca);
-
-        lblMarcaSlogan.setText("Gestão da hamburgueria");
-        painelMarcaTexto.add(lblMarcaSlogan);
-
-        painelMarcaTopo.add(painelMarcaTexto, java.awt.BorderLayout.CENTER);
-
-        painelMarca.add(painelMarcaTopo, java.awt.BorderLayout.PAGE_START);
-
-        painelDestaques.setLayout(new java.awt.GridLayout(0, 1, 0, 14));
-        lblDestaque1.setText("Balcão, mesas, retirada e delivery");
-        painelDestaques.add(lblDestaque1);
-
-        lblDestaque2.setText("Painel da cozinha em tempo real");
-        painelDestaques.add(lblDestaque2);
-
-        lblDestaque3.setText("Caixa, estoque e relatórios");
-        painelDestaques.add(lblDestaque3);
-
-        painelMarca.add(painelDestaques, java.awt.BorderLayout.CENTER);
-
-        lblRodapeMarca.setText("Cada pessoa entra com a sua conta");
-        painelMarca.add(lblRodapeMarca, java.awt.BorderLayout.PAGE_END);
-
-        getContentPane().add(painelMarca, java.awt.BorderLayout.LINE_START);
-
-        painelEntrar.setBorder(javax.swing.BorderFactory.createEmptyBorder(84, 64, 24, 64));
-        painelEntrar.setLayout(new java.awt.BorderLayout());
-        painelFormulario.setLayout(new java.awt.BorderLayout(0, 22));
-        painelTitulo.setLayout(new java.awt.GridLayout(2, 1, 0, 4));
+        painelTitulo.setLayout(new java.awt.GridLayout(2, 1, 0, 2));
         lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 26)); // NOI18N
-        lblTitulo.setText("Entrar");
+        lblTitulo.setText("BLK BURGUER");
+        lblTitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         painelTitulo.add(lblTitulo);
 
-        lblSubtitulo.setText("Use a conta criada pelo administrador");
+        lblSubtitulo.setText("Gestão da hamburgueria");
+        lblSubtitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         painelTitulo.add(lblSubtitulo);
 
-        painelFormulario.add(painelTitulo, java.awt.BorderLayout.PAGE_START);
+        painelMarca.add(painelTitulo, java.awt.BorderLayout.CENTER);
+
+        painelCartao.add(painelMarca, java.awt.BorderLayout.PAGE_START);
 
         painelCampos.setLayout(new java.awt.GridLayout(0, 1, 0, 6));
         lblUsuario.setText("Usuário");
@@ -162,11 +111,12 @@ public class Login extends javax.swing.JFrame {
 
         painelCampos.add(campoSenha);
 
-        painelFormulario.add(painelCampos, java.awt.BorderLayout.CENTER);
+        painelCartao.add(painelCampos, java.awt.BorderLayout.CENTER);
 
         painelAcao.setLayout(new java.awt.BorderLayout(0, 8));
         lblMensagem.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         lblMensagem.setText(" ");
+        lblMensagem.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         painelAcao.add(lblMensagem, java.awt.BorderLayout.PAGE_START);
 
         btnEntrar.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
@@ -178,22 +128,19 @@ public class Login extends javax.swing.JFrame {
         });
         painelAcao.add(btnEntrar, java.awt.BorderLayout.CENTER);
 
-        painelFormulario.add(painelAcao, java.awt.BorderLayout.PAGE_END);
-
-        painelEntrar.add(painelFormulario, java.awt.BorderLayout.PAGE_START);
-
-        painelRodape.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
         btnTema.setText("Tema claro");
         btnTema.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnTemaActionPerformed(evt);
             }
         });
-        painelRodape.add(btnTema);
+        painelAcao.add(btnTema, java.awt.BorderLayout.PAGE_END);
 
-        painelEntrar.add(painelRodape, java.awt.BorderLayout.PAGE_END);
+        painelCartao.add(painelAcao, java.awt.BorderLayout.PAGE_END);
 
-        getContentPane().add(painelEntrar, java.awt.BorderLayout.CENTER);
+        painelFundo.add(painelCartao, java.awt.BorderLayout.CENTER);
+
+        getContentPane().add(painelFundo, java.awt.BorderLayout.CENTER);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -262,27 +209,17 @@ public class Login extends javax.swing.JFrame {
     private javax.swing.JButton btnTema;
     private javax.swing.JPasswordField campoSenha;
     private javax.swing.JTextField campoUsuario;
-    private javax.swing.JLabel lblDestaque1;
-    private javax.swing.JLabel lblDestaque2;
-    private javax.swing.JLabel lblDestaque3;
-    private javax.swing.JLabel lblMarca;
-    private javax.swing.JLabel lblMarcaIcone;
-    private javax.swing.JLabel lblMarcaSlogan;
+    private javax.swing.JLabel lblLogo;
     private javax.swing.JLabel lblMensagem;
-    private javax.swing.JLabel lblRodapeMarca;
     private javax.swing.JLabel lblSenha;
     private javax.swing.JLabel lblSubtitulo;
     private javax.swing.JLabel lblTitulo;
     private javax.swing.JLabel lblUsuario;
     private javax.swing.JPanel painelAcao;
     private javax.swing.JPanel painelCampos;
-    private javax.swing.JPanel painelDestaques;
-    private javax.swing.JPanel painelEntrar;
-    private javax.swing.JPanel painelFormulario;
+    private javax.swing.JPanel painelCartao;
+    private javax.swing.JPanel painelFundo;
     private javax.swing.JPanel painelMarca;
-    private javax.swing.JPanel painelMarcaTexto;
-    private javax.swing.JPanel painelMarcaTopo;
-    private javax.swing.JPanel painelRodape;
     private javax.swing.JPanel painelTitulo;
     // End of variables declaration//GEN-END:variables
 }
